@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { getPersonaById, getDefaultPersona, getAllPersonas } from '@/data/personas';
 import { canPerformAction, getPermissionsForPersona, isReadOnly as checkIsReadOnly, hasApprovalAuthority, canExport } from '@/lib/permissions';
 import { STORAGE_KEYS } from '@/lib/constants';
-import { load, save } from '@/lib/storage';
+import { load, save, remove } from '@/lib/storage';
 
 /**
  * @typedef {Object} PersonaContextValue
@@ -45,8 +45,37 @@ function resolveInitialPersona() {
  */
 export function PersonaProvider({ children }) {
   const [currentPersona, setCurrentPersona] = useState(resolveInitialPersona);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => Boolean(load(STORAGE_KEYS.AUTH_TOKEN, null))
+  );
 
   const allPersonas = useMemo(() => getAllPersonas(), []);
+
+  /**
+   * Mock sign-in: activates the chosen persona and persists a fake session
+   * token to localStorage. No backend — any password is accepted upstream.
+   *
+   * @param {string} personaId - The persona to sign in as
+   * @returns {import('@/data/personas').Persona} The signed-in persona
+   */
+  const login = useCallback((personaId) => {
+    const persona = getPersonaById(personaId) || getDefaultPersona();
+    setCurrentPersona(persona);
+    save(STORAGE_KEYS.SELECTED_PERSONA, persona.id);
+    save(STORAGE_KEYS.AUTH_TOKEN, { token: `eqip-mock-${persona.id}`, at: Date.now() });
+    setIsAuthenticated(true);
+    return persona;
+  }, []);
+
+  /**
+   * Clears the mock session so the app returns to the login screen.
+   *
+   * @returns {void}
+   */
+  const logout = useCallback(() => {
+    remove(STORAGE_KEYS.AUTH_TOKEN);
+    setIsAuthenticated(false);
+  }, []);
 
   const permissions = useMemo(
     () => getPermissionsForPersona(currentPersona.id),
@@ -110,8 +139,11 @@ export function PersonaProvider({ children }) {
       setPersona,
       hasPermission,
       allPersonas,
+      isAuthenticated,
+      login,
+      logout,
     }),
-    [currentPersona, permissions, isReadOnly, approvalAuthority, canExportData, setPersona, hasPermission, allPersonas]
+    [currentPersona, permissions, isReadOnly, approvalAuthority, canExportData, setPersona, hasPermission, allPersonas, isAuthenticated, login, logout]
   );
 
   return (

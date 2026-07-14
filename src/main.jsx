@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { PersonaProvider, usePersona } from '@/context/PersonaContext';
 import { AuditLogProvider } from '@/context/AuditLogContext';
@@ -40,6 +40,7 @@ import MyProfilePage from '@/pages/users/MyProfilePage';
 import AIAgentWorkforcePage from '@/pages/ai-insights/AIAgentWorkforcePage';
 import EnterpriseKnowledgeGraphPage from '@/pages/ai-insights/EnterpriseKnowledgeGraphPage';
 import EQELogPage from '@/pages/admin/EQELogPage';
+import LoginPage from '@/pages/auth/LoginPage';
 
 import { ROUTES } from '@/lib/constants';
 import '@/index.css';
@@ -47,6 +48,21 @@ import '@/index.css';
 function LandingRedirect() {
   const { currentPersona } = usePersona();
   return <Navigate to={currentPersona?.landingPage || ROUTES.DASHBOARD} replace />;
+}
+
+/**
+ * Route guard — redirects to the login screen when there is no mock session.
+ *
+ * @param {{ children: React.ReactNode }} props
+ * @returns {React.ReactElement}
+ */
+function RequireAuth({ children }) {
+  const { isAuthenticated } = usePersona();
+  const location = useLocation();
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  }
+  return children;
 }
 
 function App() {
@@ -59,7 +75,8 @@ function App() {
               <TooltipProvider>
                 <ToastContextProvider>
                   <Routes>
-                    <Route path="/" element={<AppLayout />}>
+                    <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+                    <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
                       <Route index element={<LandingRedirect />} />
                       <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
                       <Route path={ROUTES.SEGMENTS} element={<SegmentManagementPage />} />

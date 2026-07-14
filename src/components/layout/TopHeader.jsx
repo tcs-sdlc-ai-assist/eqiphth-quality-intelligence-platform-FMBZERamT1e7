@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Keyboard,
   Info,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
@@ -187,7 +188,7 @@ HelpMenu.propTypes = {
  * @returns {React.ReactElement}
  */
 const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
-  const { currentPersona } = usePersona();
+  const { currentPersona, logout } = usePersona();
   const { breadcrumbs, toggleSidebar, sidebarOpen } = useNavigation();
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
@@ -231,6 +232,11 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
   const handleSidebarToggle = useCallback(() => {
     toggleSidebar();
   }, [toggleSidebar]);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    navigate('/login');
+  }, [logout, navigate]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -345,6 +351,25 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
             variant="compact"
             className="sm:hidden"
           />
+
+          {/* Sign out */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={cn(
+                  'inline-flex items-center justify-center rounded-lg p-2 text-slate-500 transition-colors duration-200',
+                  'hover:bg-danger-50 hover:text-danger-600',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2'
+                )}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Sign out</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
