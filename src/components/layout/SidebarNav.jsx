@@ -10,6 +10,25 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  Layers,
+  Server,
+  Play,
+  Activity,
+  TestTube,
+  ClipboardCheck,
+  Calendar,
+  Zap,
+  ShieldCheck,
+  Brain,
+  Network,
+  Monitor,
+  Lock,
+  Shield,
+  Sparkles,
+  Link2,
+  Users,
+  ListTodo,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
@@ -41,6 +60,44 @@ function resolveIcon(iconName) {
       return TrendingUp;
     case 'settings':
       return Settings;
+    case 'layers':
+      return Layers;
+    case 'server':
+      return Server;
+    case 'play':
+      return Play;
+    case 'activity':
+      return Activity;
+    case 'test-tube':
+      return TestTube;
+    case 'clipboard-check':
+      return ClipboardCheck;
+    case 'calendar':
+      return Calendar;
+    case 'zap':
+      return Zap;
+    case 'shield-check':
+      return ShieldCheck;
+    case 'brain':
+      return Brain;
+    case 'network':
+      return Network;
+    case 'monitor':
+      return Monitor;
+    case 'lock':
+      return Lock;
+    case 'shield':
+      return Shield;
+    case 'sparkles':
+      return Sparkles;
+    case 'link-2':
+      return Link2;
+    case 'users':
+      return Users;
+    case 'list-todo':
+      return ListTodo;
+    case 'user':
+      return User;
     default:
       return LayoutDashboard;
   }

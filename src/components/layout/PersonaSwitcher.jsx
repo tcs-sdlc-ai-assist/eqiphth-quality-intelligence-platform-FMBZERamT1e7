@@ -1,6 +1,7 @@
 import { forwardRef, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { ChevronDown, Check, Search, X, Users, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
 import { useAuditLog } from '@/context/AuditLogContext';
@@ -175,6 +176,7 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
 ) {
   const { currentPersona, setPersona, allPersonas } = usePersona();
   const { logEvent } = useAuditLog();
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -267,9 +269,13 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
         segment: selectedPersona ? selectedPersona.segment : '',
       });
 
+      if (selectedPersona && selectedPersona.landingPage) {
+        navigate(selectedPersona.landingPage);
+      }
+
       handleClose();
     },
-    [currentPersona, setPersona, allPersonas, logEvent, handleClose]
+    [currentPersona, setPersona, allPersonas, logEvent, handleClose, navigate]
   );
 
   const handleSearchChange = useCallback((e) => {
@@ -394,12 +400,14 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
       {...props}
     >
       {/* Simulation label */}
-      <div className="flex items-center gap-1.5 mb-1">
-        <Shield className="h-3 w-3 text-humana-green-500" aria-hidden="true" />
-        <span className="text-2xs font-medium text-humana-green-600 uppercase tracking-wider select-none">
-          Persona Simulation
-        </span>
-      </div>
+      {!isCompact ? (
+        <div className="flex items-center gap-1.5 mb-1">
+          <Shield className="h-3 w-3 text-humana-green-500" aria-hidden="true" />
+          <span className="text-2xs font-medium text-humana-green-600 uppercase tracking-wider select-none">
+            Persona Simulation
+          </span>
+        </div>
+      ) : null}
 
       {/* Trigger button */}
       <button

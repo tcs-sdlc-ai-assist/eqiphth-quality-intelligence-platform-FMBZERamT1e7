@@ -1,18 +1,14 @@
 import { forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import {
-  SiMicrosoftazure,
   SiJenkins,
   SiGithub,
   SiGitlab,
   SiJira,
-  SiSonarqube,
+  SiSonarqubeserver,
   SiDynatrace,
   SiSplunk,
-  SiSlack,
-  SiMicrosoftteams,
   SiOkta,
-  SiPowerbi,
 } from 'react-icons/si';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +43,7 @@ function resolveIconComponent(name) {
     case 'azure pipelines':
     case 'azure entra id':
     case 'microsoft azure':
-      return SiMicrosoftazure;
+      return null;
     case 'jenkins':
       return SiJenkins;
     case 'github':
@@ -58,19 +54,19 @@ function resolveIconComponent(name) {
     case 'jira align':
       return SiJira;
     case 'sonarqube':
-      return SiSonarqube;
+      return SiSonarqubeserver;
     case 'dynatrace':
       return SiDynatrace;
     case 'splunk':
       return SiSplunk;
     case 'slack':
-      return SiSlack;
+      return null;
     case 'microsoft teams':
-      return SiMicrosoftteams;
+      return null;
     case 'okta':
       return SiOkta;
     case 'power bi':
-      return SiPowerbi;
+      return null;
     default:
       return null;
   }

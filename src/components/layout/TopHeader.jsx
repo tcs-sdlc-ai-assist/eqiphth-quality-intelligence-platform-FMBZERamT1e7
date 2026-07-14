@@ -20,6 +20,7 @@ import { useNavigation } from '@/context/NavigationContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { PersonaSwitcher } from '@/components/layout/PersonaSwitcher';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SearchInput } from '@/components/shared/SearchInput';
@@ -108,66 +109,7 @@ Breadcrumbs.propTypes = {
   className: PropTypes.string,
 };
 
-/**
- * Notification bell button with unread count badge.
- *
- * @param {object} props
- * @param {number} props.unreadCount - Number of unread notifications
- * @param {function} props.onClick - Click handler
- * @param {string} [props.className] - Additional class names
- * @returns {React.ReactElement}
- */
-function NotificationBell({ unreadCount, onClick, className }) {
-  const displayCount = unreadCount > 99 ? '99+' : String(unreadCount);
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onClick}
-          className={cn(
-            'relative inline-flex items-center justify-center rounded-lg p-2 text-slate-500 transition-colors duration-200',
-            'hover:bg-slate-100 hover:text-slate-700',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2',
-            className
-          )}
-          aria-label={
-            unreadCount > 0
-              ? `Notifications, ${unreadCount} unread`
-              : 'Notifications'
-          }
-        >
-          <Bell className="h-5 w-5" aria-hidden="true" />
-          {unreadCount > 0 ? (
-            <span
-              className={cn(
-                'absolute -top-0.5 -right-0.5 inline-flex items-center justify-center rounded-full bg-danger-500 text-white font-medium',
-                unreadCount > 99
-                  ? 'min-w-[1.375rem] h-[1.125rem] px-1 text-2xs'
-                  : 'min-w-[1.125rem] h-[1.125rem] px-1 text-2xs'
-              )}
-              aria-hidden="true"
-            >
-              {displayCount}
-            </span>
-          ) : null}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        {unreadCount > 0
-          ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
-          : 'No new notifications'}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-NotificationBell.propTypes = {
-  unreadCount: PropTypes.number.isRequired,
-  onClick: PropTypes.func.isRequired,
-  className: PropTypes.string,
-};
 
 /**
  * Help menu dropdown with documentation, support, and keyboard shortcuts links.
@@ -285,9 +227,7 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
     [navigate]
   );
 
-  const handleNotificationClick = useCallback(() => {
-    navigate('/dashboard');
-  }, [navigate]);
+
 
   const handleSidebarToggle = useCallback(() => {
     toggleSidebar();
@@ -398,10 +338,7 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
           </Tooltip>
 
           {/* Notification bell */}
-          <NotificationBell
-            unreadCount={unreadCount}
-            onClick={handleNotificationClick}
-          />
+          <NotificationBell />
 
           {/* Help menu */}
           <HelpMenu />

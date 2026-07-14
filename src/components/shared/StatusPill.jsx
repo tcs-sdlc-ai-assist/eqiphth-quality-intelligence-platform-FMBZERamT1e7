@@ -57,7 +57,6 @@ function resolveStatusColors(status) {
     case 'pending_review':
     case 'in_progress':
     case 'investigating':
-    case 'at_risk':
     case 'partially_compliant':
     case 'monitoring':
     case 'degraded':

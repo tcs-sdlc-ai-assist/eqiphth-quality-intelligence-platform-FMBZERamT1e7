@@ -6,7 +6,7 @@
   *,
   *::before,
   *::after {
-    @apply border-border;
+    @apply border-slate-200;
   }
 
   html {

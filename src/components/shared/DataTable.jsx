@@ -5,7 +5,7 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  getPaginatedRowModel,
+  getPaginationRowModel,
   flexRender,
 } from '@tanstack/react-table';
 import {
@@ -333,7 +333,7 @@ const DataTable = forwardRef(function DataTable(
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
-    getPaginatedRowModel: enablePagination ? getPaginatedRowModel() : undefined,
+    getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
     enableRowSelection,
     enableSorting,
     enableFiltering: enableFiltering,

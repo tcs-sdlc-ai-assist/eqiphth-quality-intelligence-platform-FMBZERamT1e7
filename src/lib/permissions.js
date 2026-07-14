@@ -1,127 +1,18 @@
 import { PERSONA_IDS, PERMISSIONS } from '@/lib/constants';
+import personas from '@/data/personas';
 
 /**
- * Role-based permission definitions.
- * Maps each persona ID to an object describing their allowed permissions
- * and capability flags.
- *
- * @type {Object<string, { permissions: string[], readOnly: boolean, approvalAuthority: boolean, canExport: boolean }>}
- */
-const ROLE_PERMISSION_MAP = Object.freeze({
-  [PERSONA_IDS.QUALITY_DIRECTOR]: {
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_MEASURES,
-      PERMISSIONS.EDIT_MEASURES,
-      PERMISSIONS.VIEW_PATIENTS,
-      PERMISSIONS.EDIT_PATIENTS,
-      PERMISSIONS.VIEW_REPORTS,
-      PERMISSIONS.EXPORT_REPORTS,
-      PERMISSIONS.VIEW_ANALYTICS,
-      PERMISSIONS.VIEW_QUALITY_GATES,
-      PERMISSIONS.EDIT_QUALITY_GATES,
-      PERMISSIONS.VIEW_NOTIFICATIONS,
-      PERMISSIONS.MANAGE_NOTIFICATIONS,
-    ],
-    readOnly: false,
-    approvalAuthority: true,
-    canExport: true,
-  },
-  [PERSONA_IDS.PRACTICE_MANAGER]: {
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_MEASURES,
-      PERMISSIONS.EDIT_MEASURES,
-      PERMISSIONS.VIEW_PATIENTS,
-      PERMISSIONS.EDIT_PATIENTS,
-      PERMISSIONS.VIEW_REPORTS,
-      PERMISSIONS.EXPORT_REPORTS,
-      PERMISSIONS.VIEW_ANALYTICS,
-      PERMISSIONS.VIEW_QUALITY_GATES,
-      PERMISSIONS.VIEW_NOTIFICATIONS,
-      PERMISSIONS.MANAGE_NOTIFICATIONS,
-    ],
-    readOnly: false,
-    approvalAuthority: false,
-    canExport: true,
-  },
-  [PERSONA_IDS.CARE_COORDINATOR]: {
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_MEASURES,
-      PERMISSIONS.VIEW_PATIENTS,
-      PERMISSIONS.EDIT_PATIENTS,
-      PERMISSIONS.VIEW_REPORTS,
-      PERMISSIONS.VIEW_QUALITY_GATES,
-      PERMISSIONS.VIEW_NOTIFICATIONS,
-    ],
-    readOnly: false,
-    approvalAuthority: false,
-    canExport: false,
-  },
-  [PERSONA_IDS.PROVIDER]: {
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_MEASURES,
-      PERMISSIONS.VIEW_PATIENTS,
-      PERMISSIONS.VIEW_REPORTS,
-      PERMISSIONS.VIEW_QUALITY_GATES,
-      PERMISSIONS.VIEW_NOTIFICATIONS,
-    ],
-    readOnly: true,
-    approvalAuthority: false,
-    canExport: false,
-  },
-  [PERSONA_IDS.ANALYST]: {
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_MEASURES,
-      PERMISSIONS.VIEW_PATIENTS,
-      PERMISSIONS.VIEW_REPORTS,
-      PERMISSIONS.EXPORT_REPORTS,
-      PERMISSIONS.VIEW_ANALYTICS,
-      PERMISSIONS.VIEW_QUALITY_GATES,
-      PERMISSIONS.VIEW_NOTIFICATIONS,
-    ],
-    readOnly: true,
-    approvalAuthority: false,
-    canExport: true,
-  },
-  [PERSONA_IDS.ADMIN]: {
-    permissions: [
-      PERMISSIONS.VIEW_DASHBOARD,
-      PERMISSIONS.VIEW_MEASURES,
-      PERMISSIONS.EDIT_MEASURES,
-      PERMISSIONS.VIEW_PATIENTS,
-      PERMISSIONS.EDIT_PATIENTS,
-      PERMISSIONS.VIEW_REPORTS,
-      PERMISSIONS.EXPORT_REPORTS,
-      PERMISSIONS.MANAGE_USERS,
-      PERMISSIONS.MANAGE_SETTINGS,
-      PERMISSIONS.VIEW_ANALYTICS,
-      PERMISSIONS.VIEW_QUALITY_GATES,
-      PERMISSIONS.EDIT_QUALITY_GATES,
-      PERMISSIONS.VIEW_NOTIFICATIONS,
-      PERMISSIONS.MANAGE_NOTIFICATIONS,
-    ],
-    readOnly: false,
-    approvalAuthority: true,
-    canExport: true,
-  },
-});
-
-/**
- * Resolves the role definition for a given persona ID.
+ * Resolves the persona definition for a given persona ID.
  * Returns null if the persona is not found.
  *
  * @param {string} personaId - The persona identifier
- * @returns {{ permissions: string[], readOnly: boolean, approvalAuthority: boolean, canExport: boolean } | null}
+ * @returns {import('@/data/personas').Persona | null}
  */
-function resolveRole(personaId) {
+function resolvePersona(personaId) {
   if (!personaId || typeof personaId !== 'string') {
     return null;
   }
-  return ROLE_PERMISSION_MAP[personaId] || null;
+  return personas.find((p) => p.id === personaId) || null;
 }
 
 /**
@@ -132,14 +23,14 @@ function resolveRole(personaId) {
  * @returns {boolean} True if the persona has the specified permission
  */
 export function canPerformAction(personaId, action) {
-  const role = resolveRole(personaId);
-  if (!role) {
+  const persona = resolvePersona(personaId);
+  if (!persona) {
     return false;
   }
   if (!action || typeof action !== 'string') {
     return false;
   }
-  return role.permissions.includes(action);
+  return persona.permissions.includes(action);
 }
 
 /**
@@ -149,11 +40,11 @@ export function canPerformAction(personaId, action) {
  * @returns {string[]} Array of permission key strings; empty array if persona not found
  */
 export function getPermissionsForPersona(personaId) {
-  const role = resolveRole(personaId);
-  if (!role) {
+  const persona = resolvePersona(personaId);
+  if (!persona) {
     return [];
   }
-  return [...role.permissions];
+  return [...persona.permissions];
 }
 
 /**
@@ -164,11 +55,17 @@ export function getPermissionsForPersona(personaId) {
  * @returns {boolean} True if the persona is read-only
  */
 export function isReadOnly(personaId) {
-  const role = resolveRole(personaId);
-  if (!role) {
+  const persona = resolvePersona(personaId);
+  if (!persona) {
     return true;
   }
-  return role.readOnly;
+  const readOnlyRoles = [
+    'scrum_master',
+    'vendor_partner',
+    'auditor',
+    'read_only_user'
+  ];
+  return readOnlyRoles.includes(persona.id);
 }
 
 /**
@@ -180,11 +77,25 @@ export function isReadOnly(personaId) {
  * @returns {boolean} True if the persona has approval authority
  */
 export function hasApprovalAuthority(personaId) {
-  const role = resolveRole(personaId);
-  if (!role) {
+  const persona = resolvePersona(personaId);
+  if (!persona) {
     return false;
   }
-  return role.approvalAuthority;
+  const approvalRoles = [
+    'executive_leadership',
+    'segment_leader',
+    'vp_qe',
+    'avp_qe',
+    'quality_director',
+    'qe_manager',
+    'product_owner',
+    'release_manager',
+    'program_manager',
+    'application_owner',
+    'environment_manager',
+    'admin'
+  ];
+  return approvalRoles.includes(persona.id);
 }
 
 /**
@@ -195,19 +106,46 @@ export function hasApprovalAuthority(personaId) {
  * @returns {boolean} True if the persona can export data
  */
 export function canExport(personaId) {
-  const role = resolveRole(personaId);
-  if (!role) {
+  const persona = resolvePersona(personaId);
+  if (!persona) {
     return false;
   }
-  return role.canExport;
+  const exportRoles = [
+    'executive_leadership',
+    'segment_leader',
+    'vp_qe',
+    'avp_qe',
+    'quality_director',
+    'qe_manager',
+    'product_owner',
+    'release_manager',
+    'program_manager',
+    'application_owner',
+    'environment_manager',
+    'test_data_engineer',
+    'performance_engineer',
+    'security_engineer',
+    'auditor',
+    'admin'
+  ];
+  return exportRoles.includes(persona.id);
 }
 
 /**
- * Returns the complete role permission map.
+ * Returns the complete role permission map based on personas.js.
  * Useful for debugging and administrative views.
  *
  * @returns {Object<string, { permissions: string[], readOnly: boolean, approvalAuthority: boolean, canExport: boolean }>}
  */
 export function getRolePermissionMap() {
-  return ROLE_PERMISSION_MAP;
-}
+  const map = {};
+  for (const p of personas) {
+    map[p.id] = {
+      permissions: p.permissions,
+      readOnly: isReadOnly(p.id),
+      approvalAuthority: hasApprovalAuthority(p.id),
+      canExport: canExport(p.id)
+    };
+  }
+  return map;
+}

@@ -1432,6 +1432,20 @@ function ReportingAnalyticsPage() {
     frequency: '',
   });
 
+  const filteredReports = useMemo(() => {
+    let data = reports;
+    if (filters.category) {
+      data = data.filter((r) => r.category === filters.category);
+    }
+    if (filters.chartType) {
+      data = data.filter((r) => r.chartType === filters.chartType);
+    }
+    if (filters.frequency) {
+      data = data.filter((r) => r.frequency === filters.frequency);
+    }
+    return data;
+  }, [reports, filters]);
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -1628,20 +1642,6 @@ function ReportingAnalyticsPage() {
       });
     }
   }, [filteredReports, currentPersona, logEvent, toast]);
-
-  const filteredReports = useMemo(() => {
-    let data = reports;
-    if (filters.category) {
-      data = data.filter((r) => r.category === filters.category);
-    }
-    if (filters.chartType) {
-      data = data.filter((r) => r.chartType === filters.chartType);
-    }
-    if (filters.frequency) {
-      data = data.filter((r) => r.frequency === filters.frequency);
-    }
-    return data;
-  }, [reports, filters]);
 
   const kpiData = useMemo(() => {
     if (!aggregates) return [];

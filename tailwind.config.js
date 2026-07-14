@@ -8,6 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        border: '#e2e8f0',
         'humana-green': {
           50: '#edfcf2',
           100: '#d3f8df',
