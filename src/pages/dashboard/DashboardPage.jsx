@@ -162,6 +162,16 @@ function CustomTooltip({ active, payload, label, unit = '' }) {
  * @param {import('@/data/dashboardMetrics').KPI[]} props.kpis
  * @returns {React.ReactElement}
  */
+const KPI_TONES = ['blue', 'green', 'orange', 'purple', 'cyan', 'red'];
+const KPI_ICONS = [
+  <BarChart2 key="i0" />,
+  <CheckCircle key="i1" />,
+  <Activity key="i2" />,
+  <Shield key="i3" />,
+  <TrendingUp key="i4" />,
+  <AlertTriangle key="i5" />,
+];
+
 function KpiSummaryRow({ kpis }) {
   if (!Array.isArray(kpis) || kpis.length === 0) {
     return null;
@@ -169,7 +179,7 @@ function KpiSummaryRow({ kpis }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {kpis.map((kpi) => (
+      {kpis.map((kpi, i) => (
         <KpiCard
           key={kpi.id}
           label={kpi.name}
@@ -179,6 +189,9 @@ function KpiSummaryRow({ kpis }) {
           changePercent={kpi.changePercent}
           status={kpi.status}
           description={kpi.description}
+          icon={KPI_ICONS[i % KPI_ICONS.length]}
+          tone={KPI_TONES[i % KPI_TONES.length]}
+          changeLabel="vs prev period"
         />
       ))}
     </div>

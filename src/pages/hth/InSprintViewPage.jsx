@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
@@ -11,319 +9,317 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  TrendingUp,
-  Activity,
-  Layers,
-  CheckCircle,
-  AlertTriangle,
-  RefreshCw,
-  Plus,
-  Play,
-  FileText,
-  BadgeAlert,
-  Users,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { usePersona } from '@/context/PersonaContext';
+import { AlertCircle, Columns3, Filter, Rows3, Download, Search, Info } from 'lucide-react';
+import { cn, downloadCSV } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
-import { KpiCard } from '@/components/shared/KpiCard';
 import { PanelCard } from '@/components/shared/PanelCard';
-import { ChartWrapper } from '@/components/shared/ChartWrapper';
-import { FilterBar } from '@/components/shared/FilterBar';
-import { StatusPill } from '@/components/shared/StatusPill';
-import { Button } from '@/components/ui/Button';
-import { Progress } from '@/components/ui/Progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { ROUTES } from '@/lib/constants';
 
-const FILTER_FIELDS = [
-  {
-    id: 'portfolio',
-    label: 'Portfolio (CTO)',
-    type: 'select',
-    options: [
-      { value: 'Insurance CTO', label: 'Insurance CTO' },
-      { value: 'CenterWell CTO', label: 'CenterWell CTO' },
-      { value: 'Growth CTO', label: 'Growth CTO' },
-      { value: 'Corporate CTO', label: 'Corporate CTO' },
-    ],
-    defaultValue: 'Insurance CTO',
-  },
-  {
-    id: 'project',
-    label: 'Project',
-    type: 'select',
-    options: [
-      { value: 'Claims Modernization', label: 'Claims Modernization' },
-      { value: 'Provider Portal v2', label: 'Provider Portal v2' },
-      { value: 'Member Enrollment', label: 'Member Enrollment' },
-    ],
-    defaultValue: 'Claims Modernization',
-  },
-  {
-    id: 'squad',
-    label: 'Squad',
-    type: 'select',
-    options: [
-      { value: 'Squad Alpha', label: 'Squad Alpha' },
-      { value: 'Squad Beta', label: 'Squad Beta' },
-      { value: 'Squad Gamma', label: 'Squad Gamma' },
-    ],
-    defaultValue: 'Squad Alpha',
-  },
-  {
-    id: 'sprint',
-    label: 'Sprint',
-    type: 'select',
-    options: [
-      { value: 'Sprint 26.3', label: 'Sprint 26.3 (Current)' },
-      { value: 'Sprint 26.2', label: 'Sprint 26.2' },
-      { value: 'Sprint 26.1', label: 'Sprint 26.1' },
-    ],
-    defaultValue: 'Sprint 26.3',
-  },
+/* Mock data mirrors Docs/mocks/05-hth-in-sprint-view.png (frontend-only). */
+
+const FILTERS = [
+  { label: 'Portfolio (CTO)', options: ['Humana Insurance', 'CenterWell', 'Corporate'] },
+  { label: 'Project', options: ['Member Portal', 'Claims Platform', 'Provider Portal'] },
+  { label: 'Squad', options: ['Member Portal Team', 'Claims Team', 'Provider Team'] },
+  { label: 'Sprint', options: ['FY26 Q4 PI SP2', 'FY26 Q4 PI SP1', 'FY26 Q3 PI SP6'] },
 ];
 
-const JIRA_TRENDS_DATA = [
-  { pi: 'PI 25.1', automation: 45, tickets: 90, testCases: 110, stories: 30, completed: 28 },
-  { pi: 'PI 25.2', automation: 52, tickets: 95, testCases: 120, stories: 32, completed: 30 },
-  { pi: 'PI 25.3', automation: 60, tickets: 110, testCases: 140, stories: 35, completed: 32 },
-  { pi: 'PI 25.4', automation: 68, tickets: 105, testCases: 135, stories: 38, completed: 37 },
-  { pi: 'PI 26.1', automation: 75, tickets: 120, testCases: 160, stories: 40, completed: 39 },
-  { pi: 'PI 26.2', automation: 83, tickets: 125, testCases: 175, stories: 42, completed: 41 },
+const STORY_TILES = [
+  { label: 'Total Stories', value: '1,294', muted: false },
+  { label: 'Stories with Only Automated Tests', value: '246', pct: '19.0%' },
+  { label: 'Stories without a Test', value: '685', pct: '52.9%', alert: true },
+  { label: 'Stories with Manual Tests', value: '363', pct: '28.1%', alert: true },
+];
+const STORY_LEGEND = [
+  { label: 'Stories with Only Automated Tests', value: 246, color: '#16b364' },
+  { label: 'Stories with Manual Tests', value: 263, color: '#f59e0b' },
+  { label: 'Stories without a Test', value: 665, color: '#ef4444' },
 ];
 
-export function InSprintViewPage() {
-  const { currentPersona } = usePersona();
+const TEST_SEG = [
+  { label: 'Automated', value: 1028, pct: '46.9%', color: '#3b82f6' },
+  { label: 'Manual', value: 851, pct: '38.8%', color: '#ef4444' },
+  { label: 'Not Required', value: 119, pct: '5.4%', color: '#94a3b8' },
+  { label: 'Not Feasible', value: 195, pct: '8.9%', color: '#16b364' },
+];
+
+const JIRA_TREND = [
+  { pi: 'Q3 SP5', backlog: 600, sprint: 1050 },
+  { pi: 'Q4 SP4', backlog: 590, sprint: 1180 },
+  { pi: 'Q4 SP5', backlog: 585, sprint: 1320 },
+  { pi: 'Q4 SP6', backlog: 560, sprint: 1280 },
+  { pi: 'Q4 SP1', backlog: 540, sprint: 1520 },
+  { pi: 'Q4 SP2', backlog: 520, sprint: 1180 },
+];
+
+const DEFECT_TABS = ['Jira Artifacts', 'In-Sprint Automation', 'Automation & Manual', 'Automation Executions', 'Stories', 'Test Cases Types', 'Defects', 'AI Generated Tests'];
+
+const DEFECTS = [
+  { squad: 'Member Portal – Enablement', total: 0, open: 0, closed: 0, noAcher: 0 },
+  { squad: 'Member Portal – Claims', total: 0, open: 0, closed: 0, noAcher: 0 },
+  { squad: 'Member Portal – Provider', total: 0, open: 0, closed: 0, noAcher: 0 },
+  { squad: 'Member Portal – Enrollment', total: 1, open: 1, closed: 0, noAcher: 1 },
+  { squad: 'Member Portal – Billing', total: 0, open: 0, closed: 0, noAcher: 0 },
+  { squad: 'Services – Issuer Integration', total: 0, open: 0, closed: 0, noAcher: 1 },
+  { squad: 'Member Portal – Digital Access', total: 1, open: 1, closed: 0, noAcher: 0 },
+  { squad: 'Claims – Adjudication', total: 3, open: 2, closed: 1, noAcher: 0 },
+  { squad: 'Provider – Directory', total: 2, open: 1, closed: 1, noAcher: 1 },
+  { squad: 'Pharmacy – Formulary', total: 1, open: 0, closed: 1, noAcher: 0 },
+];
+
+/**
+ * Stateful labelled select for the In-Sprint filter row.
+ *
+ * @param {object} props
+ * @param {string} props.label - Field label
+ * @param {string[]} props.options - Option labels
+ * @returns {React.ReactElement}
+ */
+function FilterSelect({ label, options }) {
+  const [value, setValue] = useState(options[0]);
+  return (
+    <label className="flex flex-1 flex-col gap-1 min-w-[160px]">
+      <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
+      <select value={value} onChange={(e) => setValue(e.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40">
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Segmented toggle (pill group) used in panel headers.
+ *
+ * @param {object} props
+ * @param {string[]} props.options - Toggle labels
+ * @param {string} props.value - Active value
+ * @param {function(string):void} props.onChange - Change handler
+ * @returns {React.ReactElement}
+ */
+function Toggle({ options, value, onChange }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {options.map((o) => (
+        <button
+          key={o}
+          type="button"
+          onClick={() => onChange(o)}
+          className={cn(
+            'rounded-full px-2.5 py-1 text-2xs font-medium transition-colors',
+            value === o ? 'bg-info-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+          )}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * In-Sprint View — real-time sprint quality insights, rebuilt to match
+ * Docs/mocks/05-hth-in-sprint-view.png. Toggles, trend metric, defect tabs,
+ * and search are interactive.
+ *
+ * @returns {React.ReactElement}
+ */
+function InSprintViewPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    portfolio: 'Insurance CTO',
-    project: 'Claims Modernization',
-    squad: 'Squad Alpha',
-    sprint: 'Sprint 26.3',
-  });
-
-  const [storyToggle, setStoryToggle] = useState('stories');
+  const [storyView, setStoryView] = useState('Stories');
+  const [testView, setTestView] = useState('Tests In Sprint');
+  const [trendView, setTrendView] = useState('In-Sprint Automation');
+  const [defectTab, setDefectTab] = useState('Defects');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
-      { label: 'HTH', path: ROUTES.HTH },
+      { label: 'Humana Test Harness', path: ROUTES.HTH },
       { label: 'In-Sprint View' },
     ]);
   }, [setBreadcrumbs]);
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-    toast({
-      title: 'Filters Applied',
-      description: `Viewing in-sprint quality dashboard for ${newFilters.sprint}.`,
-      variant: 'success',
-    });
-  };
+  const storyTotal = STORY_LEGEND.reduce((s, x) => s + x.value, 0);
+  const testTotal = TEST_SEG.reduce((s, x) => s + x.value, 0);
 
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast({
-        title: 'Data Refreshed',
-        description: 'Latest in-sprint metrics pulled from Jira and qTest.',
-        variant: 'success',
-      });
-    }, 500);
+  const defectRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? DEFECTS.filter((d) => d.squad.toLowerCase().includes(q)) : DEFECTS;
+  }, [search]);
+
+  const totals = useMemo(() => defectRows.reduce(
+    (acc, d) => ({ total: acc.total + d.total, open: acc.open + d.open, closed: acc.closed + d.closed, noAcher: acc.noAcher + d.noAcher }),
+    { total: 0, open: 0, closed: 0, noAcher: 0 }
+  ), [defectRows]);
+
+  const handleExport = () => {
+    downloadCSV(defectRows, 'in-sprint-defects.csv');
+    toast({ variant: 'success', title: 'Export complete', description: `${defectRows.length} squads exported to CSV.` });
   };
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">In-Sprint View</h1>
-          <p className="text-sm text-slate-500">
-            Real-time quality insights for the current active sprint in the CTO portfolio.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" iconLeft={<RefreshCw className="h-3.5 w-3.5" />} onClick={handleRefresh}>
-            Sync Jira
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">In-Sprint View</h1>
+        <p className="text-sm text-slate-500">Real-time quality insights for the current sprint.</p>
       </div>
 
-      {/* Filters */}
-      <FilterBar fields={FILTER_FIELDS} values={filters} onChange={handleFilterChange} showResetButton />
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Sprint Automation Rate" value="84%" trend="up" changePercent="6% vs last sprint" status="success" />
-        <KpiCard label="Jira Tickets Linked" value="128" trend="up" changePercent="12% vs last sprint" status="info" />
-        <KpiCard label="Test Cases Created" value="340" trend="up" changePercent="22%" status="success" />
-        <KpiCard label="Stories Checked" value="42" trend="stable" changePercent="0%" status="neutral" />
+      {/* Filter row */}
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+        {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
       </div>
 
-      {/* Story Metrics and Linked Test Cases */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <PanelCard
-          title="Story Quality Metrics"
-          subtitle="Audit of user stories in current sprint scope"
-          icon={<Layers className="h-5 w-5 text-emerald-600" />}
-          actions={
-            <Tabs value={storyToggle} onValueChange={setStoryToggle}>
-              <TabsList className="h-8">
-                <TabsTrigger value="stories" className="text-2xs px-2 py-1">Stories</TabsTrigger>
-                <TabsTrigger value="tickets" className="text-2xs px-2 py-1">Jira Tickets</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          }
-        >
-          <div className="flex flex-col gap-4 py-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600">Total Stories / Tickets</span>
-              <span className="text-lg font-bold text-slate-900">42</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Stories with Only Automated Tests</span>
-                <span className="font-semibold text-emerald-600">28 (66.6%)</span>
+      {/* Metrics row */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        {/* Story Metrics */}
+        <PanelCard title="Story Metrics" actions={<Toggle options={['Stories', 'Jira Tickets']} value={storyView} onChange={setStoryView} />}>
+          <div className="grid grid-cols-2 gap-3">
+            {STORY_TILES.map((t) => (
+              <div key={t.label} className="rounded-lg border border-slate-200 p-3">
+                <div className="flex items-start justify-between gap-1">
+                  <span className="text-2xl font-semibold text-slate-900">{t.value}</span>
+                  {t.pct ? <span className="text-2xs text-slate-400">{t.pct}</span> : null}
+                  {t.alert ? <AlertCircle className="h-4 w-4 text-danger-500" aria-hidden="true" /> : null}
+                </div>
+                <p className="mt-1 text-2xs leading-tight text-slate-500">{t.label}</p>
               </div>
-              <Progress value={66.6} max={100} variant="success" size="sm" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Stories with Manual Tests</span>
-                <span className="font-semibold text-blue-600">10 (23.8%)</span>
+            ))}
+          </div>
+          <div className="mt-4 flex h-2.5 overflow-hidden rounded-full">
+            {STORY_LEGEND.map((s) => (
+              <div key={s.label} style={{ width: `${(s.value / storyTotal) * 100}%`, backgroundColor: s.color }} />
+            ))}
+          </div>
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {STORY_LEGEND.map((s) => (
+              <li key={s.label} className="flex items-center gap-2 text-xs">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                <span className="text-slate-600">{s.label}</span>
+                <span className="ml-auto font-semibold text-slate-900">{s.value}</span>
+              </li>
+            ))}
+          </ul>
+        </PanelCard>
+
+        {/* Test Case Metrics */}
+        <PanelCard title="Test Case Metrics" actions={<Toggle options={['Tests In Sprint', 'Automation', 'Jira Trends']} value={testView} onChange={setTestView} />}>
+          <p className="text-2xl font-semibold text-slate-900">2,193</p>
+          <p className="text-2xs uppercase tracking-wider text-slate-400">Unique Linked Tests</p>
+          <div className="mt-3 flex h-2.5 overflow-hidden rounded-full">
+            {TEST_SEG.map((s) => (
+              <div key={s.label} style={{ width: `${(s.value / testTotal) * 100}%`, backgroundColor: s.color }} />
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {TEST_SEG.map((s) => (
+              <div key={s.label} className="rounded-lg border border-slate-200 p-2.5">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-semibold text-slate-900">{s.value.toLocaleString()}</span>
+                  <span className="text-2xs text-slate-400">{s.pct}</span>
+                </div>
+                <p className="text-2xs text-slate-500">{s.label}</p>
               </div>
-              <Progress value={23.8} max={100} variant="info" size="sm" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Stories without a Test (Gaps)</span>
-                <span className="font-semibold text-red-600">4 (9.5%)</span>
-              </div>
-              <Progress value={9.5} max={100} variant="danger" size="sm" />
-            </div>
+            ))}
           </div>
         </PanelCard>
 
-        <PanelCard
-          title="Test Case Breakdown"
-          subtitle="Distribution of unique test cases linked in this sprint"
-          icon={<Activity className="h-5 w-5 text-emerald-600" />}
-        >
-          <div className="flex flex-col gap-4 py-4">
-            <div className="flex justify-between items-center text-sm border-b pb-2">
-              <span className="font-medium text-slate-700">Test Category</span>
-              <span className="font-medium text-slate-700">Count & Split</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span className="text-sm text-slate-600">Automated</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">224 (65.8%)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                <span className="text-sm text-slate-600">Manual</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">86 (25.3%)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-                <span className="text-sm text-slate-600">Not Required</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">20 (5.9%)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <span className="text-sm text-slate-600">Not Feasible</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">10 (3.0%)</span>
-            </div>
+        {/* Jira Trends */}
+        <PanelCard title="Jira Trends" actions={<Toggle options={['In-Sprint Automation', 'Test Cases', 'Stories']} value={trendView} onChange={setTrendView} />}>
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={JIRA_TREND} margin={{ top: 8, right: 12, left: -12, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="pi" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <Tooltip />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+                <Line type="monotone" dataKey="backlog" name="Automation (Backlog)" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 2.5 }} isAnimationActive={false} />
+                <Line type="monotone" dataKey="sprint" name="Automation (In Sprint)" stroke="#16b364" strokeWidth={2.5} dot={{ r: 2.5 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </PanelCard>
       </div>
 
-      {/* Jira Trends */}
-      <PanelCard
-        title="Jira Trends Across PIs"
-        subtitle="Automation rate, test cases, and completed stories across rolling 6 PIs"
-        icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
-      >
-        <ChartWrapper height={300} noCard noPadding>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={JIRA_TRENDS_DATA} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="pi" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="automation" name="Automation %" stroke="#16b364" strokeWidth={2.5} />
-              <Line type="monotone" dataKey="testCases" name="Test Cases" stroke="#3b82f6" strokeWidth={2.5} />
-              <Line type="monotone" dataKey="stories" name="Stories Scope" stroke="#8b5cf6" strokeWidth={2.5} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartWrapper>
-      </PanelCard>
+      {/* Defects grid */}
+      <PanelCard title="Defects">
+        {/* Tabs */}
+        <div className="-mt-1 mb-3 flex flex-wrap gap-1 border-b border-slate-100 pb-2">
+          {DEFECT_TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setDefectTab(t)}
+              className={cn(
+                'rounded-full px-2.5 py-1 text-2xs font-medium transition-colors',
+                defectTab === t ? 'bg-danger-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
 
-      {/* Defects Grid by Squad */}
-      <PanelCard
-        title="Defects Summary by Squad"
-        subtitle="Current active defects and escape audits for CTO squads"
-        icon={<BadgeAlert className="h-5 w-5 text-emerald-600" />}
-      >
+        {/* Toolbar */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
+          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Filter className="h-3.5 w-3.5" /> Filters</button>
+          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+          <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Download className="h-3.5 w-3.5" /> Export</button>
+          <span className="relative ml-auto">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search squads..." className="h-8 w-52 rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" />
+          </span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-600">
-            <thead className="bg-slate-50 text-2xs uppercase text-slate-500 font-semibold tracking-wider border-b">
-              <tr>
-                <th className="px-4 py-3">Squad Name</th>
-                <th className="px-4 py-3 text-right">Total Defects</th>
-                <th className="px-4 py-3 text-right">Open</th>
-                <th className="px-4 py-3 text-right">Closed</th>
-                <th className="px-4 py-3 text-right">Without Acher ID</th>
-                <th className="px-4 py-3 text-center">Health Status</th>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b-2 border-danger-500/70 text-2xs uppercase tracking-wider text-slate-500">
+                <th className="px-3 py-2 font-medium">Squad</th>
+                <th className="px-3 py-2 text-right font-medium">Total Defects</th>
+                <th className="px-3 py-2 text-right font-medium">Open</th>
+                <th className="px-3 py-2 text-right font-medium">Closed</th>
+                <th className="px-3 py-2 text-right font-medium">Without Acher ID</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
-              <tr className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">Squad Alpha</td>
-                <td className="px-4 py-3 text-right">18</td>
-                <td className="px-4 py-3 text-right text-red-600">6</td>
-                <td className="px-4 py-3 text-right">12</td>
-                <td className="px-4 py-3 text-right font-semibold text-yellow-600">2</td>
-                <td className="px-4 py-3 text-center"><StatusPill status="at_risk" size="sm" dot /></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">Squad Beta</td>
-                <td className="px-4 py-3 text-right">12</td>
-                <td className="px-4 py-3 text-right text-red-600">2</td>
-                <td className="px-4 py-3 text-right">10</td>
-                <td className="px-4 py-3 text-right">0</td>
-                <td className="px-4 py-3 text-center"><StatusPill status="passed" size="sm" dot /></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-900">Squad Gamma</td>
-                <td className="px-4 py-3 text-right">24</td>
-                <td className="px-4 py-3 text-right text-red-600">11</td>
-                <td className="px-4 py-3 text-right">13</td>
-                <td className="px-4 py-3 text-right font-semibold text-yellow-600">5</td>
-                <td className="px-4 py-3 text-center"><StatusPill status="critical" size="sm" dot /></td>
-              </tr>
+            <tbody>
+              {defectRows.map((d) => (
+                <tr key={d.squad} className="border-b border-slate-100 hover:bg-slate-50/60">
+                  <td className="px-3 py-2.5 text-slate-700">{d.squad}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-slate-900">{d.total}</td>
+                  <td className="px-3 py-2.5 text-right text-slate-600">{d.open}</td>
+                  <td className="px-3 py-2.5 text-right text-slate-600">{d.closed}</td>
+                  <td className={cn('px-3 py-2.5 text-right', d.noAcher > 0 ? 'font-medium text-danger-600' : 'text-slate-600')}>{d.noAcher}</td>
+                </tr>
+              ))}
             </tbody>
+            <tfoot>
+              <tr className="bg-slate-50 text-sm font-semibold text-slate-900">
+                <td className="px-3 py-2.5">Total Squads: {defectRows.length}</td>
+                <td className="px-3 py-2.5 text-right">{totals.total}</td>
+                <td className="px-3 py-2.5 text-right">{totals.open}</td>
+                <td className="px-3 py-2.5 text-right">{totals.closed}</td>
+                <td className="px-3 py-2.5 text-right">{totals.noAcher}</td>
+              </tr>
+            </tfoot>
           </table>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-2xs text-slate-400">
+          <span className="inline-flex items-center gap-1"><Info className="h-3 w-3" /> Showing all linked defects for the selected sprint.</span>
+          <span>1–{defectRows.length} of {defectRows.length}</span>
         </div>
       </PanelCard>
     </div>
   );
 }
 
+InSprintViewPage.displayName = 'InSprintViewPage';
+
+export { InSprintViewPage };
 export default InSprintViewPage;

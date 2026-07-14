@@ -1,76 +1,31 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import {
-  TrendingUp,
-  Activity,
-  Monitor,
-  Shield,
-  CheckCircle,
-  AlertTriangle,
-  RefreshCw,
+  Boxes,
+  Workflow,
+  Layers,
+  Server,
+  Users,
+  Search,
+  SlidersHorizontal,
   Download,
   Plus,
-  Eye,
-  Edit,
-  FileText,
-  Database,
-  Layers,
-  BarChart2,
-  Tag,
-  User,
-  Calendar,
+  ArrowRight,
+  MoreVertical,
+  ChevronLeft,
   ChevronRight,
-  X,
-  Search,
-  Settings,
-  Zap,
-  GitBranch,
-  Server,
-  Code,
-  TestTube,
-  ClipboardCheck,
+  ChevronsUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
-import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
-import { usePersona } from '@/context/PersonaContext';
+import { cn, downloadCSV } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
-import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
-import {
-  getApplications,
-  addApplication,
-  editApplication,
-  exportApplications,
-} from '@/lib/mock-api/mockService';
 import { KpiCard } from '@/components/shared/KpiCard';
-import { PanelCard } from '@/components/shared/PanelCard';
-import { ChartWrapper } from '@/components/shared/ChartWrapper';
-import { FilterBar } from '@/components/shared/FilterBar';
-import { StatusPill } from '@/components/shared/StatusPill';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { DataTable } from '@/components/shared/DataTable';
-import { PermissionGate } from '@/components/shared/PermissionGate';
 import { Badge } from '@/components/ui/Badge';
+import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { Progress } from '@/components/ui/Progress';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Card } from '@/components/ui/Card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import {
   Dialog,
   DialogContent,
@@ -79,1546 +34,528 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/DropdownMenu';
-import {
-  Tooltip as UITooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/components/ui/Tooltip';
-import { PERMISSIONS, ROUTES, MEASURE_STATUS } from '@/lib/constants';
+import { ROUTES } from '@/lib/constants';
 
-const SEGMENT_COLORS = {
-  Enterprise: '#16b364',
-  Medicare: '#3b82f6',
-  Medicaid: '#f59e0b',
-  Commercial: '#8b5cf6',
-  External: '#ef4444',
-  Compliance: '#06b6d4',
-};
+/* Mock data mirrors Docs/mocks/03-application-master.png (frontend-only). */
 
-const RISK_COLORS = {
-  low: '#10b981',
-  medium: '#f59e0b',
-  high: '#ef4444',
-  critical: '#dc2626',
-};
-
-const STATUS_CHART_COLORS = {
-  [MEASURE_STATUS.ON_TRACK]: '#10b981',
-  [MEASURE_STATUS.AT_RISK]: '#f59e0b',
-  [MEASURE_STATUS.CRITICAL]: '#ef4444',
-  [MEASURE_STATUS.COMPLETED]: '#3b82f6',
-  [MEASURE_STATUS.NOT_STARTED]: '#a3a3a3',
-};
-
-const SEGMENT_OPTIONS = [
-  { value: '', label: 'All Segments' },
-  { value: 'Enterprise', label: 'Enterprise' },
-  { value: 'Medicare', label: 'Medicare' },
-  { value: 'Medicaid', label: 'Medicaid' },
-  { value: 'Commercial', label: 'Commercial' },
-  { value: 'External', label: 'External' },
-  { value: 'Compliance', label: 'Compliance' },
+const KPIS = [
+  { id: 'apps', label: 'Total Applications', value: 428, changeText: '12 this month', trend: 'improving', icon: <Boxes />, tone: 'blue' },
+  { id: 'integrations', label: 'Active Integrations', value: 1256, changeText: '38 this month', trend: 'improving', icon: <Workflow />, tone: 'green' },
+  { id: 'tech', label: 'Technologies', value: 186, changeText: '5 this month', trend: 'improving', icon: <Layers />, tone: 'purple' },
+  { id: 'envs', label: 'Environments', value: 64, changeText: '2 this month', trend: 'improving', icon: <Server />, tone: 'slate' },
+  { id: 'owners', label: 'Application Owners', value: 142, changeText: 'No change', trend: 'stable', icon: <Users />, tone: 'orange' },
 ];
 
-const RISK_OPTIONS = [
-  { value: '', label: 'All Risk Levels' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'critical', label: 'Critical' },
+const TABS = ['Applications', 'Application Map', 'Inventory Insights', 'Lifecycle', 'Quality Attributes'];
+
+/** The exact rows shown in the mock, followed by generated rows so filtering
+ *  and pagination have realistic volume. */
+const SEED = [
+  { code: 'MP', name: 'Member Portal', id: 'APP-00123', capability: 'Member Engagement', owner: 'Sarah Johnson', stage: 'Production', criticality: 'High', score: 92, tech: ['Java', 'React', 'AWS'], extra: 3, envs: 6, updated: 'May 28, 2026', ago: '2h ago' },
+  { code: 'CP', name: 'Claims Platform', id: 'APP-00234', capability: 'Claims Management', owner: 'David Lee', stage: 'Production', criticality: 'High', score: 88, tech: ['.NET', 'SQL', 'Azure'], extra: 2, envs: 5, updated: 'May 27, 2026', ago: '1d ago' },
+  { code: 'PR', name: 'Provider Portal', id: 'APP-00345', capability: 'Provider Management', owner: 'Maria Garcia', stage: 'Production', criticality: 'High', score: 76, tech: ['Java', 'Angular', 'AWS'], extra: 2, envs: 6, updated: 'May 26, 2026', ago: '2d ago' },
+  { code: 'ES', name: 'Enrollment System', id: 'APP-00456', capability: 'Enrollment', owner: 'James Wilson', stage: 'Production', criticality: 'Medium', score: 74, tech: ['.NET', 'Azure', 'SQL'], extra: 1, envs: 4, updated: 'May 25, 2026', ago: '2d ago' },
+  { code: 'BP', name: 'Billing Platform', id: 'APP-00567', capability: 'Billing & Payments', owner: 'Priya Patel', stage: 'Production', criticality: 'Medium', score: 65, tech: ['Java', 'SQL', 'AWS'], extra: 2, envs: 5, updated: 'May 24, 2026', ago: '3d ago' },
+  { code: 'PH', name: 'Pharmacy Portal', id: 'APP-00678', capability: 'Pharmacy Management', owner: 'Andrew Kim', stage: 'Production', criticality: 'Medium', score: 91, tech: ['React', 'Node', 'AWS'], extra: 2, envs: 4, updated: 'May 23, 2026', ago: '3d ago' },
+  { code: 'RP', name: 'Reporting Platform', id: 'APP-00789', capability: 'Analytics & Reporting', owner: 'Lisa Thompson', stage: 'Production', criticality: 'Low', score: 82, tech: ['Python', 'BI', 'Azure'], extra: 1, envs: 3, updated: 'May 22, 2026', ago: '4d ago' },
+  { code: 'CM', name: 'Care Management', id: 'APP-00890', capability: 'Care Management', owner: 'Robert Brown', stage: 'UAT', criticality: 'Medium', score: 68, tech: ['.NET', 'Azure', 'SQL'], extra: 1, envs: 3, updated: 'May 21, 2026', ago: '5d ago' },
 ];
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'All Statuses' },
-  { value: MEASURE_STATUS.ON_TRACK, label: 'On Track' },
-  { value: MEASURE_STATUS.AT_RISK, label: 'At Risk' },
-  { value: MEASURE_STATUS.CRITICAL, label: 'Critical' },
-];
+const CAPABILITIES = ['Member Engagement', 'Claims Management', 'Provider Management', 'Enrollment', 'Billing & Payments', 'Pharmacy Management', 'Analytics & Reporting', 'Care Management'];
+const OWNERS = ['Sarah Johnson', 'David Lee', 'Maria Garcia', 'James Wilson', 'Priya Patel', 'Andrew Kim', 'Lisa Thompson', 'Robert Brown', 'Nina Alvarez', 'Tom Becker'];
+const STAGES = ['Production', 'UAT', 'Dev'];
+const CRITS = ['High', 'Medium', 'Low'];
+const TECHS = ['Java', '.NET', 'React', 'Angular', 'AWS', 'Azure', 'SQL', 'Node', 'Python', 'BI'];
+const NAMES = ['Auth Service', 'Notification Hub', 'Document Store', 'Rewards Engine', 'Appointment Scheduler', 'Eligibility API', 'Formulary Service', 'Claims Router', 'Member Search', 'Payment Gateway', 'Consent Manager', 'Care Gaps Engine', 'Fraud Detection', 'Data Lake Sync', 'Identity Broker', 'Wellness Portal', 'Provider Directory', 'Benefits Calculator', 'Audit Ledger', 'Message Queue'];
 
-function CustomTooltip({ active, payload, label, unit = '' }) {
-  if (!active || !payload || payload.length === 0) {
-    return null;
+/** Builds the full application list — the mock seed plus deterministic extras. */
+function buildApplications() {
+  const list = [...SEED];
+  for (let i = 0; i < NAMES.length; i += 1) {
+    const name = NAMES[i];
+    const words = name.split(' ');
+    const code = (words[0][0] + (words[1] ? words[1][0] : words[0][1])).toUpperCase();
+    const score = 55 + ((i * 17) % 45);
+    const t0 = TECHS[i % TECHS.length];
+    const t1 = TECHS[(i + 3) % TECHS.length];
+    const t2 = TECHS[(i + 6) % TECHS.length];
+    list.push({
+      code,
+      name,
+      id: `APP-0${1001 + i}`,
+      capability: CAPABILITIES[i % CAPABILITIES.length],
+      owner: OWNERS[i % OWNERS.length],
+      stage: STAGES[i % STAGES.length],
+      criticality: CRITS[i % CRITS.length],
+      score,
+      tech: [t0, t1, t2],
+      extra: i % 3,
+      envs: 2 + (i % 5),
+      updated: 'May 20, 2026',
+      ago: `${(i % 9) + 1}d ago`,
+    });
   }
+  return list;
+}
 
+const CRIT_DOT = { High: 'bg-danger-500', Medium: 'bg-warning-500', Low: 'bg-success-500' };
+const STAGE_VARIANT = { Production: 'success', UAT: 'info', Dev: 'neutral' };
+const TECH_COLOR = {
+  Java: 'bg-orange-100 text-orange-800', '.NET': 'bg-violet-100 text-violet-800', React: 'bg-cyan-100 text-cyan-800',
+  Angular: 'bg-red-100 text-red-800', AWS: 'bg-amber-100 text-amber-800', Azure: 'bg-blue-100 text-blue-800',
+  SQL: 'bg-slate-200 text-slate-800', Node: 'bg-green-100 text-green-800', Python: 'bg-blue-100 text-blue-800', BI: 'bg-emerald-100 text-emerald-800',
+};
+const PAGE_SIZE = 10;
+
+/**
+ * Circular quality-score badge — a colored ring around the numeric score.
+ *
+ * @param {object} props
+ * @param {number} props.score - Quality score (0-100)
+ * @returns {React.ReactElement}
+ */
+function ScoreRing({ score }) {
+  const color = score >= 85 ? '#16b364' : score >= 70 ? '#f59e0b' : '#ef4444';
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  const offset = c - (score / 100) * c;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-dropdown">
-      <p className="text-xs font-medium text-slate-900">{label}</p>
-      {payload.map((entry, index) => (
-        <p key={index} className="text-xs text-slate-600" style={{ color: entry.color }}>
-          {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(1) : entry.value}
-          {unit}
-        </p>
-      ))}
-    </div>
+    <span className="relative inline-flex h-10 w-10 items-center justify-center">
+      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r={r} fill="none" stroke="#e2e8f0" strokeWidth="3" />
+        <circle cx="20" cy="20" r={r} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset} />
+      </svg>
+      <span className="absolute text-xs font-semibold text-slate-800">{score}</span>
+    </span>
   );
 }
 
-function getRiskBadgeVariant(riskLevel) {
-  switch (riskLevel) {
-    case 'critical':
-      return 'error';
-    case 'high':
-      return 'warning';
-    case 'medium':
-      return 'info';
-    case 'low':
-    default:
-      return 'success';
-  }
+/**
+ * Sortable column header button.
+ *
+ * @param {object} props
+ * @param {string} props.label - Column label
+ * @param {string} props.field - Sort key
+ * @param {{key:string,dir:string}} props.sort - Current sort state
+ * @param {function(string):void} props.onSort - Sort toggle handler
+ * @param {string} [props.align] - Text alignment
+ * @returns {React.ReactElement}
+ */
+function SortHeader({ label, field, sort, onSort, align = 'left' }) {
+  const active = sort.key === field;
+  return (
+    <th className={cn('px-4 py-2.5 font-medium', align === 'center' && 'text-center')}>
+      <button type="button" onClick={() => onSort(field)} className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-700">
+        {label}
+        {active ? (
+          sort.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ChevronsUpDown className="h-3 w-3 text-slate-300" />
+        )}
+      </button>
+    </th>
+  );
 }
 
-function AddEditDialog({ open, onOpenChange, onSubmit, loading, application }) {
-  const isEdit = Boolean(application);
-  const [formData, setFormData] = useState({
-    name: '',
-    segment: 'Enterprise',
-    owner: '',
-    riskLevel: 'medium',
-    environment: 'Production',
-  });
-  const [errors, setErrors] = useState({});
+/**
+ * Application Master — single source of truth for applications. Interactive
+ * grid (search, filter, sort, paginate, export, add) over mock data. Matches
+ * Docs/mocks/03-application-master.png.
+ *
+ * @returns {React.ReactElement}
+ */
+function ApplicationMasterPage() {
+  const { setBreadcrumbs } = useNavigation();
+  const { toast } = useToast();
+
+  const [apps, setApps] = useState(buildApplications);
+  const [activeTab, setActiveTab] = useState('Applications');
+  const [search, setSearch] = useState('');
+  const [fCapability, setFCapability] = useState('');
+  const [fStage, setFStage] = useState('');
+  const [fCrit, setFCrit] = useState('');
+  const [fScore, setFScore] = useState('');
+  const [sort, setSort] = useState({ key: 'name', dir: 'asc' });
+  const [page, setPage] = useState(1);
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', capability: CAPABILITIES[0], owner: OWNERS[0], stage: 'Production', criticality: 'Medium' });
 
   useEffect(() => {
-    if (application) {
-      setFormData({
-        name: application.name || '',
-        segment: application.segment || 'Enterprise',
-        owner: application.owner || '',
-        riskLevel: application.riskLevel || 'medium',
-        environment: application.environment || 'Production',
-      });
-    } else {
-      setFormData({
-        name: '',
-        segment: 'Enterprise',
-        owner: '',
-        riskLevel: 'medium',
-        environment: 'Production',
-      });
-    }
-    setErrors({});
-  }, [application, open]);
+    setBreadcrumbs([
+      { label: 'Home', path: ROUTES.DASHBOARD },
+      { label: 'Application Master' },
+    ]);
+  }, [setBreadcrumbs]);
 
-  const handleChange = useCallback((field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  const scoreMatch = useCallback((score) => {
+    if (fScore === '90+') return score >= 90;
+    if (fScore === '70-89') return score >= 70 && score < 90;
+    if (fScore === 'Below 70') return score < 70;
+    return true;
+  }, [fScore]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = apps.filter((a) => {
+      if (q && !`${a.name} ${a.id} ${a.owner} ${a.capability}`.toLowerCase().includes(q)) return false;
+      if (fCapability && a.capability !== fCapability) return false;
+      if (fStage && a.stage !== fStage) return false;
+      if (fCrit && a.criticality !== fCrit) return false;
+      if (!scoreMatch(a.score)) return false;
+      return true;
+    });
+    const dir = sort.dir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const av = a[sort.key];
+      const bv = b[sort.key];
+      if (typeof av === 'number') return (av - bv) * dir;
+      return String(av).localeCompare(String(bv)) * dir;
+    });
+  }, [apps, search, fCapability, fStage, fCrit, scoreMatch, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search, fCapability, fStage, fCrit, fScore]);
+
+  const handleSort = useCallback((key) => {
+    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
   }, []);
 
-  const handleInputChange = useCallback(
-    (field) => (e) => {
-      handleChange(field, e.target.value);
-    },
-    [handleChange]
-  );
-
-  const validate = useCallback(() => {
-    const newErrors = {};
-    if (!formData.name.trim()) {
-      newErrors.name = 'Application name is required';
-    }
-    if (!formData.owner.trim()) {
-      newErrors.owner = 'Owner is required';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [formData]);
-
-  const handleSubmit = useCallback(() => {
-    if (!validate()) return;
-    onSubmit(formData);
-  }, [formData, validate, onSubmit]);
-
-  const handleOpenChange = useCallback(
-    (nextOpen) => {
-      if (!nextOpen) {
-        setFormData({
-          name: '',
-          segment: 'Enterprise',
-          owner: '',
-          riskLevel: 'medium',
-          environment: 'Production',
-        });
-        setErrors({});
-      }
-      onOpenChange(nextOpen);
-    },
-    [onOpenChange]
-  );
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Application' : 'Add Application'}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? 'Update the application details below.'
-              : 'Enter the details for the new application.'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4 mt-4">
-          <Input
-            label="Application Name"
-            placeholder="Enter application name"
-            value={formData.name}
-            onChange={handleInputChange('name')}
-            error={errors.name}
-            required
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Segment"
-              options={SEGMENT_OPTIONS.filter((s) => s.value !== '')}
-              value={formData.segment}
-              onValueChange={(val) => handleChange('segment', val)}
-            />
-            <Select
-              label="Risk Level"
-              options={RISK_OPTIONS.filter((r) => r.value !== '')}
-              value={formData.riskLevel}
-              onValueChange={(val) => handleChange('riskLevel', val)}
-            />
-          </div>
-
-          <Input
-            label="Owner"
-            placeholder="Enter owner name"
-            value={formData.owner}
-            onChange={handleInputChange('owner')}
-            error={errors.owner}
-            required
-          />
-
-          <Input
-            label="Environment"
-            placeholder="e.g. Production"
-            value={formData.environment}
-            onChange={handleInputChange('environment')}
-          />
-        </div>
-
-        <DialogFooter className="pt-4">
-          <Button variant="outline" size="md" onClick={() => handleOpenChange(false)} disabled={loading}>
-            Cancel
-          </Button>
-          <Button variant="primary" size="md" onClick={handleSubmit} loading={loading}>
-            {isEdit ? 'Save Changes' : 'Add Application'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ApplicationDetailDialog({ application, open, onOpenChange }) {
-  const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    if (open) {
-      setActiveTab('overview');
-    }
-  }, [open]);
-
-  if (!application) return null;
-
-  const overview = application.overview || {};
-  const releases = application.releases || [];
-  const tests = application.tests || [];
-  const governance = application.governance || [];
-  const trendData = overview.trendData || [];
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-lg flex items-center justify-center bg-humana-green-50">
-              <Monitor className="h-5 w-5 text-humana-green-600" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="pr-8">{application.name}</DialogTitle>
-              <DialogDescription className="mt-1">
-                {application.id} • {application.segment} • {application.environment}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <StatusPill status={application.qualityStatus} size="md" dot />
-          <Badge variant={getRiskBadgeVariant(application.riskLevel)} size="md">
-            {application.riskLevel} risk
-          </Badge>
-          <Badge variant="outline" size="md">
-            {application.automationCoverage.toFixed(1)}% automated
-          </Badge>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border border-slate-200 p-3">
-            <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Test Cases</span>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{formatNumber(application.testCaseCount)}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-3">
-            <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Releases</span>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{application.releaseCount}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-3">
-            <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Uptime</span>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{overview.uptime ? `${overview.uptime}%` : '—'}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-3">
-            <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">MTTR</span>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{overview.mttr ? `${overview.mttr}h` : '—'}</p>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-slate-400 shrink-0" aria-hidden="true" />
-            <span className="text-slate-500">Owner:</span>
-            <span className="font-medium text-slate-900">{application.owner}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Layers className="h-4 w-4 text-slate-400 shrink-0" aria-hidden="true" />
-            <span className="text-slate-500">Segment:</span>
-            <span className="font-medium text-slate-900">{application.segment}</span>
-          </div>
-          {overview.lastDeployDate ? (
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-slate-400 shrink-0" aria-hidden="true" />
-              <span className="text-slate-500">Last Deploy:</span>
-              <span className="font-medium text-slate-900">{formatDate(overview.lastDeployDate)}</span>
-            </div>
-          ) : null}
-          {overview.activeUsers ? (
-            <div className="flex items-center gap-2 text-sm">
-              <Activity className="h-4 w-4 text-slate-400 shrink-0" aria-hidden="true" />
-              <span className="text-slate-500">Active Users:</span>
-              <span className="font-medium text-slate-900">{formatNumber(overview.activeUsers)}</span>
-            </div>
-          ) : null}
-        </div>
-
-        {application.techStack && application.techStack.length > 0 ? (
-          <div className="mt-3">
-            <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Tech Stack</span>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {application.techStack.map((tech) => (
-                <Badge key={tech} variant="outline" size="sm">{tech}</Badge>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="releases">Releases ({releases.length})</TabsTrigger>
-            <TabsTrigger value="tests">Tests ({tests.length})</TabsTrigger>
-            <TabsTrigger value="governance">Governance ({governance.length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <div className="flex flex-col gap-4 pt-2">
-              {overview.description ? (
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-1.5">Description</h4>
-                  <p className="text-sm text-slate-600 leading-relaxed">{overview.description}</p>
-                </div>
-              ) : null}
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Change Failure Rate</span>
-                  <p className="mt-1 text-base font-semibold text-slate-900">{overview.changeFailureRate != null ? `${overview.changeFailureRate}%` : '—'}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Deploy Frequency</span>
-                  <p className="mt-1 text-base font-semibold text-slate-900">{overview.deploymentFrequency != null ? `${overview.deploymentFrequency}/mo` : '—'}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Automation</span>
-                  <p className="mt-1 text-base font-semibold text-slate-900">{application.automationCoverage.toFixed(1)}%</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Created</span>
-                  <p className="mt-1 text-base font-semibold text-slate-900">{overview.createdDate ? formatDate(overview.createdDate) : '—'}</p>
-                </div>
-              </div>
-
-              {trendData.length > 0 ? (
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Incident & Deployment Trend</h4>
-                  <ChartWrapper height={220} noCard noPadding>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis
-                          dataKey="month"
-                          tick={{ fontSize: 11, fill: '#64748b' }}
-                          axisLine={{ stroke: '#e2e8f0' }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 11, fill: '#64748b' }}
-                          axisLine={{ stroke: '#e2e8f0' }}
-                          tickLine={false}
-                          allowDecimals={false}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend wrapperStyle={{ fontSize: '11px' }} iconType="circle" iconSize={8} />
-                        <Bar dataKey="deployments" name="Deployments" fill="#16b364" radius={[3, 3, 0, 0]} barSize={14} />
-                        <Bar dataKey="incidents" name="Incidents" fill="#ef4444" radius={[3, 3, 0, 0]} barSize={14} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartWrapper>
-                </div>
-              ) : null}
-
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900 mb-1.5">Automation Coverage</h4>
-                <Progress
-                  value={application.automationCoverage}
-                  max={100}
-                  variant="auto"
-                  size="md"
-                  showValue
-                  label="Automation Coverage"
-                />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="releases">
-            <div className="flex flex-col gap-2 pt-2">
-              {releases.length === 0 ? (
-                <EmptyState
-                  type="no_data"
-                  title="No releases"
-                  message="No release history available for this application."
-                  size="sm"
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Version</th>
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Date</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Quality</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Passed</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Failed</th>
-                        <th className="pb-2 text-center text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {releases.map((rel) => (
-                        <tr key={rel.id} className="border-b border-slate-100 last:border-b-0">
-                          <td className="py-2.5 font-medium text-slate-900">{rel.version}</td>
-                          <td className="py-2.5 text-slate-700">{formatDate(rel.date)}</td>
-                          <td className="py-2.5 text-right text-slate-700">{rel.qualityScore.toFixed(1)}</td>
-                          <td className="py-2.5 text-right text-success-600">{formatNumber(rel.testsPassed)}</td>
-                          <td className="py-2.5 text-right text-danger-600">{rel.testsFailed}</td>
-                          <td className="py-2.5 text-center">
-                            <StatusPill status={rel.status} size="sm" dot />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="tests">
-            <div className="flex flex-col gap-2 pt-2">
-              {tests.length === 0 ? (
-                <EmptyState
-                  type="no_data"
-                  title="No test suites"
-                  message="No test suite data available for this application."
-                  size="sm"
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Suite</th>
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Type</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Total</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Passed</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Failed</th>
-                        <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Coverage</th>
-                        <th className="pb-2 text-center text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tests.map((suite) => (
-                        <tr key={suite.id} className="border-b border-slate-100 last:border-b-0">
-                          <td className="py-2.5 font-medium text-slate-900 text-xs">{suite.name}</td>
-                          <td className="py-2.5">
-                            <Badge variant="outline" size="sm">{suite.type}</Badge>
-                          </td>
-                          <td className="py-2.5 text-right text-slate-700">{suite.totalTests}</td>
-                          <td className="py-2.5 text-right text-success-600">{suite.passed}</td>
-                          <td className="py-2.5 text-right text-danger-600">{suite.failed}</td>
-                          <td className="py-2.5 text-right text-slate-700">{suite.coveragePercent > 0 ? `${suite.coveragePercent.toFixed(1)}%` : '—'}</td>
-                          <td className="py-2.5 text-center">
-                            <StatusPill status={suite.status} size="sm" dot />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="governance">
-            <div className="flex flex-col gap-2 pt-2">
-              {governance.length === 0 ? (
-                <EmptyState
-                  type="no_data"
-                  title="No governance rules"
-                  message="No governance rules configured for this application."
-                  size="sm"
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Rule</th>
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Category</th>
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Owner</th>
-                        <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Last Audit</th>
-                        <th className="pb-2 text-center text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {governance.map((rule) => (
-                        <tr key={rule.id} className="border-b border-slate-100 last:border-b-0">
-                          <td className="py-2.5">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-slate-900 text-xs">{rule.name}</span>
-                              <span className="text-2xs text-slate-500 line-clamp-1">{rule.description}</span>
-                            </div>
-                          </td>
-                          <td className="py-2.5">
-                            <Badge variant="outline" size="sm">{rule.category}</Badge>
-                          </td>
-                          <td className="py-2.5 text-slate-700 text-xs">{rule.owner}</td>
-                          <td className="py-2.5 text-slate-700 text-xs">{formatDate(rule.lastAuditDate)}</td>
-                          <td className="py-2.5 text-center">
-                            <StatusPill status={rule.status} size="sm" dot />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function AnalyticsPanel({ applications }) {
-  const segmentData = useMemo(() => {
-    const counts = {};
-    for (const app of applications) {
-      counts[app.segment] = (counts[app.segment] || 0) + 1;
-    }
-    return Object.entries(counts).map(([segment, count]) => ({
-      segment,
-      count,
+  const handleExport = useCallback(() => {
+    const rows = filtered.map((a) => ({
+      Application: a.name, ID: a.id, Capability: a.capability, Owner: a.owner,
+      Lifecycle: a.stage, Criticality: a.criticality, QualityScore: a.score,
+      Technologies: a.tech.join('|'), Environments: a.envs, LastUpdated: a.updated,
     }));
-  }, [applications]);
+    downloadCSV(rows, 'applications.csv');
+    toast({ variant: 'success', title: 'Export complete', description: `${rows.length} applications exported to CSV.` });
+  }, [filtered, toast]);
 
-  const riskData = useMemo(() => {
-    const counts = {};
-    for (const app of applications) {
-      counts[app.riskLevel] = (counts[app.riskLevel] || 0) + 1;
-    }
-    return Object.entries(counts).map(([level, count]) => ({
-      level,
-      count,
-      label: level.charAt(0).toUpperCase() + level.slice(1),
-    }));
-  }, [applications]);
+  const handleAdd = useCallback(() => {
+    if (!form.name.trim()) return;
+    const words = form.name.trim().split(' ');
+    const code = (words[0][0] + (words[1] ? words[1][0] : (words[0][1] || 'X'))).toUpperCase();
+    const next = {
+      code, name: form.name.trim(), id: `APP-0${2000 + apps.length}`,
+      capability: form.capability, owner: form.owner, stage: form.stage, criticality: form.criticality,
+      score: 80, tech: ['Java', 'AWS'], extra: 0, envs: 1, updated: 'Jul 14, 2026', ago: 'just now',
+    };
+    setApps((prev) => [next, ...prev]);
+    setAddOpen(false);
+    setForm({ name: '', capability: CAPABILITIES[0], owner: OWNERS[0], stage: 'Production', criticality: 'Medium' });
+    toast({ variant: 'success', title: 'Application added', description: `"${next.name}" was added to the inventory.` });
+  }, [form, apps.length, toast]);
 
-  const statusData = useMemo(() => {
-    const counts = {};
-    for (const app of applications) {
-      counts[app.qualityStatus] = (counts[app.qualityStatus] || 0) + 1;
-    }
-    return Object.entries(counts).map(([status, count]) => ({
-      status,
-      count,
-      label: status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    }));
-  }, [applications]);
+  const total = apps.length;
+  const insights = useMemo(() => {
+    const high = apps.filter((a) => a.criticality === 'High').length;
+    const prod = apps.filter((a) => a.stage === 'Production').length;
+    const below = apps.filter((a) => a.score < 70).length;
+    const pct = (n) => `${Math.round((n / total) * 100)}%`;
+    return [
+      { label: 'High Criticality', value: high, pct: pct(high) },
+      { label: 'In Production', value: prod, pct: pct(prod) },
+      { label: 'Below Quality Score 70', value: below, pct: pct(below) },
+      { label: 'Orphaned Applications', value: 7, pct: pct(7) },
+    ];
+  }, [apps, total]);
 
-  const automationData = useMemo(() => {
-    return applications
-      .map((app) => ({
-        name: app.name.length > 18 ? app.name.substring(0, 18) + '…' : app.name,
-        coverage: app.automationCoverage,
-      }))
-      .sort((a, b) => b.coverage - a.coverage)
-      .slice(0, 12);
-  }, [applications]);
+  const capabilityOptions = useMemo(() => [{ value: '', label: 'All' }, ...CAPABILITIES.map((c) => ({ value: c, label: c }))], []);
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <PanelCard
-        title="Applications by Segment"
-        subtitle="Distribution across organizational segments"
-        icon={<Layers className="h-5 w-5" />}
-      >
-        <ChartWrapper height={250} noCard noPadding>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={segmentData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis
-                dataKey="segment"
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" name="Applications" radius={[4, 4, 0, 0]} barSize={32}>
-                {segmentData.map((entry) => (
-                  <Cell key={entry.segment} fill={SEGMENT_COLORS[entry.segment] || '#64748b'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartWrapper>
-      </PanelCard>
-
-      <PanelCard
-        title="Risk Level Distribution"
-        subtitle="Applications by risk classification"
-        icon={<AlertTriangle className="h-5 w-5" />}
-      >
-        <div className="flex flex-col items-center gap-4 lg:flex-row">
-          <ChartWrapper height={200} noCard noPadding className="flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={riskData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={3}
-                  dataKey="count"
-                  nameKey="label"
-                  stroke="none"
-                >
-                  {riskData.map((entry) => (
-                    <Cell key={entry.level} fill={RISK_COLORS[entry.level] || '#a3a3a3'} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value, name) => [`${value} apps`, name]} />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartWrapper>
-          <div className="flex flex-col gap-2.5 flex-1">
-            {riskData.map((item) => (
-              <div key={item.level} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: RISK_COLORS[item.level] || '#a3a3a3' }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm font-medium capitalize text-slate-700">{item.level}</span>
-                </div>
-                <span className="text-sm font-semibold text-slate-900">{item.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </PanelCard>
-
-      <PanelCard
-        title="Quality Status Overview"
-        subtitle="Applications by quality status"
-        icon={<Shield className="h-5 w-5" />}
-      >
-        <div className="flex flex-col items-center gap-4 lg:flex-row">
-          <ChartWrapper height={200} noCard noPadding className="flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={3}
-                  dataKey="count"
-                  nameKey="label"
-                  stroke="none"
-                >
-                  {statusData.map((entry) => (
-                    <Cell key={entry.status} fill={STATUS_CHART_COLORS[entry.status] || '#a3a3a3'} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value, name) => [`${value} apps`, name]} />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartWrapper>
-          <div className="flex flex-col gap-2.5 flex-1">
-            {statusData.map((item) => (
-              <div key={item.status} className="flex items-center justify-between gap-3">
-                <StatusPill status={item.status} size="sm" dot />
-                <span className="text-sm font-semibold text-slate-900">{item.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </PanelCard>
-
-      <PanelCard
-        title="Automation Coverage"
-        subtitle="Top applications by test automation coverage"
-        icon={<Zap className="h-5 w-5" />}
-      >
-        <ChartWrapper height={250} noCard noPadding>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={automationData} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis
-                type="number"
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
-                tickLine={false}
-                domain={[0, 100]}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
-                tickLine={false}
-                width={80}
-              />
-              <Tooltip content={<CustomTooltip unit="%" />} />
-              <Bar dataKey="coverage" name="Coverage %" fill="#16b364" radius={[0, 4, 4, 0]} barSize={16} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartWrapper>
-      </PanelCard>
-    </div>
-  );
-}
-
-function ApplicationMasterSkeleton() {
-  return (
-    <div className="flex flex-col gap-6" role="status" aria-label="Loading applications" aria-busy="true">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <Skeleton className="h-7 w-56" />
-          <Skeleton className="h-4 w-80" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-36" />
-        </div>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Application Master</h1>
+        <p className="text-sm text-slate-500">Single source of truth for all applications and related quality information.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-xl" />
+      {/* KPI row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {KPIS.map((k) => (
+          <KpiCard key={k.id} label={k.label} value={k.value} unit="count" trend={k.trend} changeText={k.changeText} icon={k.icon} tone={k.tone} />
         ))}
       </div>
 
-      <Skeleton className="h-10 w-full rounded-lg" />
-      <Skeleton className="h-96 rounded-xl" />
-      <span className="sr-only">Loading...</span>
+      {/* Tabs */}
+      <div className="border-b border-slate-200">
+        <nav className="-mb-px flex gap-6 overflow-x-auto" aria-label="Application views">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                'whitespace-nowrap border-b-2 pb-3 text-sm font-medium transition-colors',
+                activeTab === tab ? 'border-humana-green-500 text-navy-900' : 'border-transparent text-slate-500 hover:text-slate-800'
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {activeTab === 'Applications' ? (
+        <>
+          {/* Filter row */}
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+            <label className="flex flex-1 flex-col gap-1 min-w-[180px]">
+              <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">Search</span>
+              <span className="relative">
+                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search applications..."
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40"
+                />
+              </span>
+            </label>
+            <FilterField label="Business Capability" value={fCapability} onChange={setFCapability} options={capabilityOptions} />
+            <FilterField label="Lifecycle Stage" value={fStage} onChange={setFStage} options={[{ value: '', label: 'All' }, ...STAGES.map((s) => ({ value: s, label: s }))]} />
+            <FilterField label="Criticality" value={fCrit} onChange={setFCrit} options={[{ value: '', label: 'All' }, ...CRITS.map((s) => ({ value: s, label: s }))]} />
+            <FilterField label="Quality Score" value={fScore} onChange={setFScore} options={[{ value: '', label: 'All' }, { value: '90+', label: '90+' }, { value: '70-89', label: '70-89' }, { value: 'Below 70', label: 'Below 70' }]} />
+            <Button variant="outline" size="sm" iconLeft={<SlidersHorizontal className="h-3.5 w-3.5" />} onClick={() => toast({ title: 'More Filters', description: 'Advanced filters are a demo in this frontend-only build.' })}>More Filters</Button>
+            <Button variant="outline" size="sm" iconLeft={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
+            <Button variant="primary" size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />} onClick={() => setAddOpen(true)}>Add Application</Button>
+          </div>
+
+          {/* Applications grid */}
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 text-xs text-slate-500">
+              <span>{filtered.length} application{filtered.length === 1 ? '' : 's'}</span>
+              <div className="flex items-center gap-2">
+                <span>
+                  {filtered.length === 0 ? '0' : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </span>
+                <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1} className="rounded-md p-1 hover:bg-slate-100 disabled:opacity-40" aria-label="Previous page"><ChevronLeft className="h-4 w-4" /></button>
+                <span className="rounded-md bg-humana-green-50 px-2 py-0.5 font-medium text-humana-green-700">{safePage}</span>
+                <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} className="rounded-md p-1 hover:bg-slate-100 disabled:opacity-40" aria-label="Next page"><ChevronRight className="h-4 w-4" /></button>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead>
+                  <tr className="border-y border-slate-200 bg-slate-50 text-2xs text-slate-500">
+                    <SortHeader label="Application" field="name" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Business Capability" field="capability" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Owner" field="owner" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Lifecycle" field="stage" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Criticality" field="criticality" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Quality" field="score" sort={sort} onSort={handleSort} align="center" />
+                    <th className="px-4 py-2.5 font-medium uppercase tracking-wider">Technologies</th>
+                    <SortHeader label="Envs" field="envs" sort={sort} onSort={handleSort} align="center" />
+                    <th className="px-4 py-2.5 font-medium uppercase tracking-wider">Last Updated</th>
+                    <th className="px-4 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((app) => (
+                    <tr
+                      key={app.id}
+                      className="cursor-pointer border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60"
+                      onClick={() => toast({ title: app.name, description: `${app.id} · ${app.capability} · Owner ${app.owner}` })}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-humana-green-50 text-xs font-semibold text-humana-green-700">{app.code}</span>
+                          <div>
+                            <p className="font-medium text-slate-800">{app.name}</p>
+                            <p className="text-2xs text-slate-400">{app.id}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{app.capability}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={app.owner} size="sm" />
+                          <span className="text-slate-700">{app.owner}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><Badge variant={STAGE_VARIANT[app.stage]} size="sm">{app.stage}</Badge></td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1.5 text-slate-700">
+                          <span className={cn('h-2 w-2 rounded-full', CRIT_DOT[app.criticality])} aria-hidden="true" />
+                          {app.criticality}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3"><div className="flex justify-center"><ScoreRing score={app.score} /></div></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {app.tech.map((t) => (
+                            <span key={t} className={cn('rounded px-1.5 py-0.5 text-2xs font-medium', TECH_COLOR[t] || 'bg-slate-100 text-slate-700')}>{t}</span>
+                          ))}
+                          {app.extra ? <span className="text-2xs text-slate-400">+{app.extra}</span> : null}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-slate-700">{app.envs}</td>
+                      <td className="px-4 py-3">
+                        <p className="text-slate-700">{app.updated}</p>
+                        <p className="text-2xs text-slate-400">{app.ago}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); toast({ title: app.name, description: 'Row actions are a demo in this frontend-only build.' }); }} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label={`Actions for ${app.name}`}>
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {pageRows.length === 0 ? (
+                    <tr><td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-400">No applications match your filters.</td></tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <TabSummary tab={activeTab} apps={apps} />
+      )}
+
+      {/* Inventory insights strip */}
+      <div className="flex flex-wrap items-center gap-x-10 gap-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+        <div className="mr-auto">
+          <h3 className="text-base font-semibold text-slate-900">Application Inventory Insights</h3>
+          <p className="text-sm text-slate-500">Your application portfolio health at a glance.</p>
+        </div>
+        {insights.map((it) => (
+          <div key={it.label} className="flex flex-col">
+            <span className="text-2xs uppercase tracking-wider text-slate-400">{it.label}</span>
+            <span className="mt-1 text-lg font-semibold text-slate-900">
+              {it.value} <span className="text-xs font-normal text-slate-400">({it.pct})</span>
+            </span>
+          </div>
+        ))}
+        <button type="button" onClick={() => setActiveTab('Inventory Insights')} className="inline-flex items-center gap-1.5 text-sm font-medium text-humana-green-600 hover:text-humana-green-700">
+          View Inventory Insights <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {/* Add Application dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Application</DialogTitle>
+            <DialogDescription>Register a new application in the inventory.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex flex-col gap-4">
+            <Input label="Application Name" placeholder="e.g. Member Rewards" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+            <Select label="Business Capability" options={CAPABILITIES.map((c) => ({ value: c, label: c }))} value={form.capability} onValueChange={(v) => setForm((f) => ({ ...f, capability: v }))} />
+            <Select label="Owner" options={OWNERS.map((o) => ({ value: o, label: o }))} value={form.owner} onValueChange={(v) => setForm((f) => ({ ...f, owner: v }))} />
+            <div className="grid grid-cols-2 gap-3">
+              <Select label="Lifecycle Stage" options={STAGES.map((s) => ({ value: s, label: s }))} value={form.stage} onValueChange={(v) => setForm((f) => ({ ...f, stage: v }))} />
+              <Select label="Criticality" options={CRITS.map((s) => ({ value: s, label: s }))} value={form.criticality} onValueChange={(v) => setForm((f) => ({ ...f, criticality: v }))} />
+            </div>
+          </div>
+          <DialogFooter className="pt-4">
+            <Button variant="outline" size="md" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button variant="primary" size="md" onClick={handleAdd} disabled={!form.name.trim()}>Add Application</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 /**
- * Application Master Repository page component.
- * Displays application list with detailed fields, filters, tabs, and actions.
+ * Styled filter select for the applications toolbar.
  *
+ * @param {object} props
+ * @param {string} props.label - Field label
+ * @param {string} props.value - Selected value
+ * @param {function(string):void} props.onChange - Change handler
+ * @param {{value:string,label:string}[]} props.options - Options
  * @returns {React.ReactElement}
  */
-function ApplicationMasterPage() {
-  const { currentPersona, hasPermission } = usePersona();
-  const { setBreadcrumbs } = useNavigation();
-  const { logEvent } = useAuditLog();
-  const { toast } = useToast();
-
-  const [loading, setLoading] = useState(true);
-  const [applications, setApplications] = useState([]);
-  const [activeTab, setActiveTab] = useState('list');
-  const [addEditOpen, setAddEditOpen] = useState(false);
-  const [addEditLoading, setAddEditLoading] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [selectedApp, setSelectedApp] = useState(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    segment: '',
-    riskLevel: '',
-    qualityStatus: '',
-  });
-
-  useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Home', path: ROUTES.DASHBOARD },
-      { label: 'Measures', path: ROUTES.MEASURES },
-      { label: 'Applications' },
-    ]);
-  }, [setBreadcrumbs]);
-
-  const loadApplications = useCallback(async () => {
-    setLoading(true);
-    try {
-      const filterParams = {};
-      if (filters.segment) filterParams.segment = filters.segment;
-      if (filters.riskLevel) filterParams.riskLevel = filters.riskLevel;
-      if (filters.qualityStatus) filterParams.qualityStatus = filters.qualityStatus;
-      const data = await getApplications(filterParams);
-      setApplications(data);
-    } catch {
-      setApplications([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => {
-    loadApplications();
-  }, [loadApplications]);
-
-  const handleFilterChange = useCallback((newFilters) => {
-    setFilters(newFilters);
-  }, []);
-
-  const handleRefresh = useCallback(() => {
-    loadApplications();
-  }, [loadApplications]);
-
-  const handleAddClick = useCallback(() => {
-    setEditTarget(null);
-    setAddEditOpen(true);
-  }, []);
-
-  const handleEditClick = useCallback((app) => {
-    setEditTarget(app);
-    setAddEditOpen(true);
-  }, []);
-
-  const handleAddEditSubmit = useCallback(
-    async (formData) => {
-      setAddEditLoading(true);
-      try {
-        if (editTarget) {
-          const updated = await editApplication(editTarget.id, formData);
-          logEvent('config_change', {
-            action: 'Application Updated',
-            details: `Application "${updated.name}" updated by ${currentPersona.name}.`,
-            resource: updated.id,
-            outcome: 'success',
-            segment: updated.segment,
-          });
-          toast({
-            variant: 'success',
-            title: 'Application Updated',
-            description: `"${updated.name}" has been updated successfully.`,
-          });
-        } else {
-          const created = await addApplication({
-            ...formData,
-            qualityStatus: MEASURE_STATUS.NOT_STARTED,
-            automationCoverage: 0,
-            testCaseCount: 0,
-            releaseCount: 0,
-            techStack: [],
-            integrations: [],
-            overview: {
-              description: '',
-              createdDate: new Date().toISOString().split('T')[0],
-              lastDeployDate: '',
-              activeUsers: 0,
-              uptime: 0,
-              mttr: 0,
-              changeFailureRate: 0,
-              deploymentFrequency: 0,
-              trendData: [],
-            },
-            releases: [],
-            tests: [],
-            governance: [],
-          });
-          logEvent('config_change', {
-            action: 'Application Added',
-            details: `Application "${created.name}" added by ${currentPersona.name}.`,
-            resource: created.id,
-            outcome: 'success',
-            segment: created.segment,
-          });
-          toast({
-            variant: 'success',
-            title: 'Application Added',
-            description: `"${created.name}" has been added to the repository.`,
-          });
-        }
-        setAddEditOpen(false);
-        setEditTarget(null);
-        await loadApplications();
-      } catch (err) {
-        toast({
-          variant: 'error',
-          title: editTarget ? 'Update Failed' : 'Add Failed',
-          description: err && err.error ? err.error : 'An error occurred.',
-        });
-      } finally {
-        setAddEditLoading(false);
-      }
-    },
-    [editTarget, currentPersona, logEvent, toast, loadApplications]
+function FilterField({ label, value, onChange, options }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </label>
   );
+}
 
-  const handleAppClick = useCallback((app) => {
-    setSelectedApp(app);
-    setDetailOpen(true);
-  }, []);
+/**
+ * Real content for the non-Applications tabs — derived breakdowns over the
+ * same mock data, so every tab shows something meaningful.
+ *
+ * @param {object} props
+ * @param {string} props.tab - Active tab label
+ * @param {object[]} props.apps - Application list
+ * @returns {React.ReactElement}
+ */
+function TabSummary({ tab, apps }) {
+  const groupBy = (key) => {
+    const m = {};
+    for (const a of apps) m[a[key]] = (m[a[key]] || 0) + 1;
+    return Object.entries(m).sort((x, y) => y[1] - x[1]);
+  };
 
-  const handleDetailClose = useCallback((open) => {
-    setDetailOpen(open);
-    if (!open) {
-      setSelectedApp(null);
-    }
-  }, []);
-
-  const handleExportCSV = useCallback(async () => {
-    try {
-      const data = await exportApplications(filters);
-      downloadCSV(data, 'applications.csv');
-      logEvent('data_export', {
-        action: 'Exported Applications',
-        details: `Applications exported as CSV by ${currentPersona.name}. ${data.length} records.`,
-        resource: '/measures',
-        outcome: 'success',
-      });
-      toast({
-        variant: 'success',
-        title: 'Export Complete',
-        description: `${data.length} applications exported as CSV.`,
-      });
-    } catch (err) {
-      toast({
-        variant: 'error',
-        title: 'Export Failed',
-        description: err && err.error ? err.error : 'Failed to export applications.',
-      });
-    }
-  }, [filters, currentPersona, logEvent, toast]);
-
-  const handleExportJSON = useCallback(async () => {
-    try {
-      const data = await exportApplications(filters);
-      downloadJSON(data, 'applications.json');
-      logEvent('data_export', {
-        action: 'Exported Applications',
-        details: `Applications exported as JSON by ${currentPersona.name}. ${data.length} records.`,
-        resource: '/measures',
-        outcome: 'success',
-      });
-      toast({
-        variant: 'success',
-        title: 'Export Complete',
-        description: `${data.length} applications exported as JSON.`,
-      });
-    } catch (err) {
-      toast({
-        variant: 'error',
-        title: 'Export Failed',
-        description: err && err.error ? err.error : 'Failed to export applications.',
-      });
-    }
-  }, [filters, currentPersona, logEvent, toast]);
-
-  const kpiData = useMemo(() => {
-    const total = applications.length;
-    const onTrack = applications.filter((a) => a.qualityStatus === MEASURE_STATUS.ON_TRACK).length;
-    const atRisk = applications.filter((a) => a.qualityStatus === MEASURE_STATUS.AT_RISK).length;
-    const critical = applications.filter((a) => a.qualityStatus === MEASURE_STATUS.CRITICAL).length;
-    const avgAutomation = total > 0
-      ? Math.round((applications.reduce((sum, a) => sum + a.automationCoverage, 0) / total) * 10) / 10
-      : 0;
-    const totalTests = applications.reduce((sum, a) => sum + a.testCaseCount, 0);
-
-    return [
-      {
-        id: 'kpi_total',
-        label: 'Total Applications',
-        value: total,
-        unit: 'count',
-        trend: 'stable',
-        status: 'on_track',
-        description: 'Total applications in the repository.',
-      },
-      {
-        id: 'kpi_on_track',
-        label: 'On Track',
-        value: onTrack,
-        unit: 'count',
-        trend: 'improving',
-        status: 'on_track',
-        description: 'Applications meeting quality targets.',
-      },
-      {
-        id: 'kpi_at_risk',
-        label: 'At Risk / Critical',
-        value: atRisk + critical,
-        unit: 'count',
-        trend: atRisk + critical > 5 ? 'declining' : 'stable',
-        status: atRisk + critical > 5 ? 'at_risk' : 'on_track',
-        description: 'Applications requiring attention.',
-      },
-      {
-        id: 'kpi_automation',
-        label: 'Avg Automation',
-        value: avgAutomation,
-        unit: 'percent',
-        trend: avgAutomation >= 80 ? 'improving' : 'declining',
-        status: avgAutomation >= 85 ? 'on_track' : 'at_risk',
-        description: 'Average test automation coverage.',
-      },
+  if (tab === 'Lifecycle') {
+    return <BreakdownGrid title="Applications by Lifecycle Stage" rows={groupBy('stage')} total={apps.length} />;
+  }
+  if (tab === 'Quality Attributes') {
+    const bands = [
+      ['Excellent (90+)', apps.filter((a) => a.score >= 90).length],
+      ['Good (70–89)', apps.filter((a) => a.score >= 70 && a.score < 90).length],
+      ['Needs Attention (<70)', apps.filter((a) => a.score < 70).length],
     ];
-  }, [applications]);
+    return <BreakdownGrid title="Applications by Quality Score" rows={bands} total={apps.length} />;
+  }
+  if (tab === 'Inventory Insights') {
+    return <BreakdownGrid title="Applications by Business Capability" rows={groupBy('capability')} total={apps.length} />;
+  }
+  // Application Map
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-card">
+      <Workflow className="mx-auto h-10 w-10 text-slate-300" aria-hidden="true" />
+      <h3 className="mt-3 text-base font-semibold text-slate-900">Application Map</h3>
+      <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+        Interactive dependency map across {apps.length} applications and their integrations. Select the Applications tab to browse the inventory.
+      </p>
+    </div>
+  );
+}
 
-  const filterFields = useMemo(() => {
-    return [
-      {
-        id: 'segment',
-        label: 'Segment',
-        type: 'select',
-        options: SEGMENT_OPTIONS,
-        defaultValue: '',
-      },
-      {
-        id: 'riskLevel',
-        label: 'Risk Level',
-        type: 'select',
-        options: RISK_OPTIONS,
-        defaultValue: '',
-      },
-      {
-        id: 'qualityStatus',
-        label: 'Quality Status',
-        type: 'select',
-        options: STATUS_OPTIONS,
-        defaultValue: '',
-      },
-    ];
-  }, []);
-
-  const tableColumns = useMemo(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Application',
-        cell: ({ row }) => (
-          <button
-            type="button"
-            onClick={() => handleAppClick(row.original)}
-            className="text-sm font-medium text-humana-green-600 hover:text-humana-green-700 hover:underline text-left transition-colors"
-          >
-            {row.original.name}
-          </button>
-        ),
-      },
-      {
-        accessorKey: 'segment',
-        header: 'Segment',
-        size: 110,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1.5">
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: SEGMENT_COLORS[row.original.segment] || '#64748b' }}
-              aria-hidden="true"
-            />
-            <span className="text-sm text-slate-700">{row.original.segment}</span>
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'owner',
-        header: 'Owner',
-        size: 140,
-        cell: ({ row }) => (
-          <span className="text-sm text-slate-700">{row.original.owner}</span>
-        ),
-      },
-      {
-        accessorKey: 'riskLevel',
-        header: 'Risk',
-        size: 100,
-        cell: ({ row }) => (
-          <Badge variant={getRiskBadgeVariant(row.original.riskLevel)} size="sm">
-            {row.original.riskLevel}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: 'qualityStatus',
-        header: 'Status',
-        size: 120,
-        cell: ({ row }) => (
-          <StatusPill status={row.original.qualityStatus} size="sm" dot />
-        ),
-      },
-      {
-        accessorKey: 'automationCoverage',
-        header: 'Automation',
-        size: 120,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <Progress
-              value={row.original.automationCoverage}
-              max={100}
-              variant="auto"
-              size="xs"
-              className="flex-1"
-            />
-            <span className="text-xs font-medium text-slate-700 w-10 text-right">
-              {row.original.automationCoverage.toFixed(1)}%
+/**
+ * A simple horizontal-bar breakdown card used by the tab summaries.
+ *
+ * @param {object} props
+ * @param {string} props.title - Card title
+ * @param {[string,number][]} props.rows - [label, count] pairs
+ * @param {number} props.total - Total for percentage
+ * @returns {React.ReactElement}
+ */
+function BreakdownGrid({ title, rows, total }) {
+  const max = Math.max(...rows.map(([, n]) => n), 1);
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+      <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+      <div className="mt-4 flex flex-col gap-3">
+        {rows.map(([label, n]) => (
+          <div key={label} className="flex items-center gap-3">
+            <span className="w-56 shrink-0 truncate text-sm text-slate-600">{label}</span>
+            <div className="h-2.5 flex-1 rounded-full bg-slate-100">
+              <div className="h-2.5 rounded-full bg-humana-green-500" style={{ width: `${(n / max) * 100}%` }} />
+            </div>
+            <span className="w-24 shrink-0 text-right text-sm text-slate-500">
+              <span className="font-semibold text-slate-900">{n}</span> ({Math.round((n / total) * 100)}%)
             </span>
           </div>
-        ),
-      },
-      {
-        accessorKey: 'testCaseCount',
-        header: 'Tests',
-        size: 80,
-        cell: ({ row }) => (
-          <span className="text-sm text-slate-700">{formatNumber(row.original.testCaseCount)}</span>
-        ),
-      },
-      {
-        accessorKey: 'releaseCount',
-        header: 'Releases',
-        size: 80,
-        cell: ({ row }) => (
-          <span className="text-sm text-slate-700">{row.original.releaseCount}</span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: '',
-        size: 80,
-        enableSorting: false,
-        enableHiding: false,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-0.5">
-            <UITooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => handleAppClick(row.original)}
-                  className={cn(
-                    'inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors duration-200',
-                    'hover:bg-slate-100 hover:text-slate-600',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-1'
-                  )}
-                  aria-label={`View ${row.original.name}`}
-                >
-                  <Eye className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">View Details</TooltipContent>
-            </UITooltip>
-            <PermissionGate requiredAction={PERMISSIONS.EDIT_MEASURES} behavior="hidden">
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditClick(row.original);
-                    }}
-                    className={cn(
-                      'inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 transition-colors duration-200',
-                      'hover:bg-slate-100 hover:text-slate-600',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-1'
-                    )}
-                    aria-label={`Edit ${row.original.name}`}
-                  >
-                    <Edit className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Edit</TooltipContent>
-              </UITooltip>
-            </PermissionGate>
-          </div>
-        ),
-      },
-    ],
-    [handleAppClick, handleEditClick]
-  );
-
-  if (loading) {
-    return <ApplicationMasterSkeleton />;
-  }
-
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Application Repository</h1>
-          <p className="text-sm text-slate-500">
-            Master repository of all applications with quality metrics, releases, and governance for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
-
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-
-          <PermissionGate requiredAction={PERMISSIONS.EDIT_MEASURES} behavior="hidden">
-            <Button
-              variant="primary"
-              size="sm"
-              iconLeft={<Plus className="h-3.5 w-3.5" />}
-              onClick={handleAddClick}
-            >
-              Add Application
-            </Button>
-          </PermissionGate>
-        </div>
-      </div>
-
-      {/* KPI Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpiData.map((kpi) => (
-          <KpiCard
-            key={kpi.id}
-            label={kpi.label}
-            value={kpi.value}
-            unit={kpi.unit}
-            trend={kpi.trend}
-            status={kpi.status}
-            description={kpi.description}
-          />
         ))}
       </div>
-
-      {/* Filters */}
-      <FilterBar
-        fields={filterFields}
-        values={filters}
-        onChange={handleFilterChange}
-        liveMode
-        showApplyButton={false}
-        showResetButton
-        showActiveFilters
-      />
-
-      {/* Tabs: List / Analytics */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="list">List View</TabsTrigger>
-          <TabsTrigger value="cards">Card View</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list">
-          {applications.length === 0 ? (
-            <EmptyState
-              type="no_data"
-              title="No applications found"
-              message="No applications match the current filter criteria. Try adjusting your filters or add a new application."
-              size="lg"
-              bordered
-              actionLabel={hasPermission(PERMISSIONS.EDIT_MEASURES) ? 'Add Application' : undefined}
-              onAction={hasPermission(PERMISSIONS.EDIT_MEASURES) ? handleAddClick : undefined}
-              actionIcon={<Plus className="h-3.5 w-3.5" />}
-            />
-          ) : (
-            <DataTable
-              columns={tableColumns}
-              data={applications}
-              enableSorting
-              enableFiltering
-              enablePagination
-              enableColumnVisibility
-              enableExport={false}
-              pageSize={15}
-              searchPlaceholder="Search applications..."
-              emptyMessage="No applications match the search criteria."
-              onRowClick={handleAppClick}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="cards">
-          {applications.length === 0 ? (
-            <EmptyState
-              type="no_data"
-              title="No applications found"
-              message="No applications match the current filter criteria."
-              size="lg"
-              bordered
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {applications.map((app) => (
-                <Card
-                  key={app.id}
-                  className={cn(
-                    'p-5 cursor-pointer transition-all duration-200',
-                    'hover:shadow-card-hover hover:border-humana-green-200',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2',
-                    'active:scale-[0.99]'
-                  )}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleAppClick(app)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleAppClick(app);
-                    }
-                  }}
-                  aria-label={`${app.name}. Status: ${app.qualityStatus}. Risk: ${app.riskLevel}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${SEGMENT_COLORS[app.segment] || '#64748b'}15` }}
-                      >
-                        <Monitor
-                          className="h-4.5 w-4.5"
-                          style={{ color: SEGMENT_COLORS[app.segment] || '#64748b' }}
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-0 min-w-0">
-                        <h3 className="text-sm font-semibold text-slate-900 truncate">{app.name}</h3>
-                        <span className="text-2xs text-slate-500">{app.segment} • {app.owner}</span>
-                      </div>
-                    </div>
-                    <StatusPill status={app.qualityStatus} size="sm" dot />
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-2xs text-slate-400 uppercase tracking-wider">Risk</span>
-                      <Badge variant={getRiskBadgeVariant(app.riskLevel)} size="sm">
-                        {app.riskLevel}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-2xs text-slate-400 uppercase tracking-wider">Tests</span>
-                      <span className="text-sm font-semibold text-slate-900">{formatNumber(app.testCaseCount)}</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-2xs text-slate-400 uppercase tracking-wider">Releases</span>
-                      <span className="text-sm font-semibold text-slate-900">{app.releaseCount}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-2xs text-slate-400">Automation</span>
-                      <span className="text-2xs font-medium text-slate-700">{app.automationCoverage.toFixed(1)}%</span>
-                    </div>
-                    <Progress
-                      value={app.automationCoverage}
-                      max={100}
-                      variant="auto"
-                      size="xs"
-                      animate
-                    />
-                  </div>
-
-                  {app.techStack && app.techStack.length > 0 ? (
-                    <div className="mt-2.5 flex flex-wrap gap-1">
-                      {app.techStack.slice(0, 3).map((tech) => (
-                        <Badge key={tech} variant="outline" size="sm">{tech}</Badge>
-                      ))}
-                      {app.techStack.length > 3 ? (
-                        <Badge variant="outline" size="sm">+{app.techStack.length - 3}</Badge>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  <div className="mt-2.5 flex items-center justify-end">
-                    <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          {applications.length === 0 ? (
-            <EmptyState
-              type="no_chart"
-              title="No data for analytics"
-              message="No applications available to generate analytics. Try adjusting your filters."
-              size="lg"
-              bordered
-            />
-          ) : (
-            <AnalyticsPanel applications={applications} />
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Summary Table */}
-      {applications.length > 0 && activeTab !== 'analytics' ? (
-        <PanelCard
-          title="Application Summary"
-          subtitle={`${applications.length} applications across ${new Set(applications.map((a) => a.segment)).size} segments`}
-          icon={<Activity className="h-5 w-5" />}
-          collapsible
-          defaultCollapsed
-        >
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Total Test Cases</span>
-              <span className="text-2xl font-semibold text-slate-900">
-                {formatNumber(applications.reduce((sum, a) => sum + a.testCaseCount, 0))}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Total Releases</span>
-              <span className="text-2xl font-semibold text-slate-900">
-                {formatNumber(applications.reduce((sum, a) => sum + a.releaseCount, 0))}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">Avg Automation</span>
-              <span className="text-2xl font-semibold text-slate-900">
-                {applications.length > 0
-                  ? (applications.reduce((sum, a) => sum + a.automationCoverage, 0) / applications.length).toFixed(1)
-                  : 0}%
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider">High/Critical Risk</span>
-              <span className="text-2xl font-semibold text-slate-900">
-                {applications.filter((a) => a.riskLevel === 'high' || a.riskLevel === 'critical').length}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3">
-            {Array.from(new Set(applications.map((a) => a.segment))).sort().map((segment) => {
-              const segApps = applications.filter((a) => a.segment === segment);
-              return (
-                <div key={segment} className="flex items-center gap-3">
-                  <div className="w-24 shrink-0 flex items-center gap-1.5">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: SEGMENT_COLORS[segment] || '#64748b' }}
-                      aria-hidden="true"
-                    />
-                    <span className="text-sm font-medium text-slate-700">{segment}</span>
-                  </div>
-                  <div className="flex-1">
-                    <Progress
-                      value={segApps.length}
-                      max={applications.length || 1}
-                      variant="primary"
-                      size="sm"
-                      animate
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-900 w-8 text-right">{segApps.length}</span>
-                </div>
-              );
-            })}
-          </div>
-        </PanelCard>
-      ) : null}
-
-      {/* Add/Edit Dialog */}
-      <AddEditDialog
-        open={addEditOpen}
-        onOpenChange={(open) => {
-          setAddEditOpen(open);
-          if (!open) setEditTarget(null);
-        }}
-        onSubmit={handleAddEditSubmit}
-        loading={addEditLoading}
-        application={editTarget}
-      />
-
-      {/* Detail Dialog */}
-      <ApplicationDetailDialog
-        application={selectedApp}
-        open={detailOpen}
-        onOpenChange={handleDetailClose}
-      />
     </div>
   );
 }

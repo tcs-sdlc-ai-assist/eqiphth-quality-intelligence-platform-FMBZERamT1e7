@@ -1,20 +1,20 @@
-import { forwardRef, useCallback, useEffect } from 'react';
+import { forwardRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { SidebarNav } from '@/components/layout/SidebarNav';
+import { BrandLogo } from '@/components/shared/BrandLogo';
 import { DESIGN_TOKENS } from '@/lib/constants';
 
 /**
- * Main application layout component that composes the TopHeader, SidebarNav,
- * and main content area with an Outlet for nested route rendering.
+ * Main application layout: a full-height dark-navy sidebar on the left (brand
+ * mark at top, navigation in the middle, Humana footer at the bottom) with the
+ * TopHeader and routed content in the column to its right.
  *
- * Handles responsive sidebar toggle behavior:
- * - On desktop (lg+), the sidebar is always visible and can be collapsed to icon-only mode.
- * - On mobile (<lg), the sidebar renders as an overlay controlled by the
- *   NavigationContext sidebarOpen state.
+ * Responsive: on desktop (lg+) the sidebar is always visible. On mobile it
+ * slides in as an overlay controlled by NavigationContext.sidebarOpen.
  *
  * @param {object} props
  * @param {string} [props.className] - Additional class names for the outer container
@@ -23,23 +23,6 @@ import { DESIGN_TOKENS } from '@/lib/constants';
  */
 const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
   const { sidebarOpen, toggleSidebar } = useNavigation();
-
-  // Close sidebar on route change for mobile
-  // (handled inside SidebarNav via toggleSidebar on navigate)
-
-  // Close mobile sidebar overlay on window resize to desktop
-  useEffect(() => {
-    function handleResize() {
-      if (window.innerWidth >= DESIGN_TOKENS.BREAKPOINTS.LG && sidebarOpen) {
-        // On desktop, sidebar is always visible; no action needed
-      }
-    }
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [sidebarOpen]);
 
   const handleOverlayClick = useCallback(() => {
     if (sidebarOpen && window.innerWidth < DESIGN_TOKENS.BREAKPOINTS.LG) {
@@ -50,46 +33,64 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
   return (
     <div
       ref={ref}
-      className={cn('flex h-screen flex-col overflow-hidden bg-slate-50', className)}
+      className={cn('flex h-screen overflow-hidden bg-slate-50', className)}
       {...props}
     >
-      {/* Top header */}
-      <TopHeader />
+      {/* Mobile sidebar overlay backdrop */}
+      {sidebarOpen ? (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={handleOverlayClick}
+          aria-hidden="true"
+        />
+      ) : null}
 
-      {/* Body: sidebar + main content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Mobile sidebar overlay backdrop */}
-        {sidebarOpen ? (
-          <div
-            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden"
-            onClick={handleOverlayClick}
-            aria-hidden="true"
-          />
-        ) : null}
+      {/* Sidebar — full height, dark navy */}
+      <aside
+        className={cn(
+          'z-40 flex w-64 shrink-0 flex-col text-slate-300',
+          'bg-gradient-to-b from-[#102449] to-[#0a1730]',
+          // Off-canvas on mobile; static and always visible on desktop
+          'fixed inset-y-0 left-0 -translate-x-full transition-transform duration-300 lg:static lg:translate-x-0',
+          sidebarOpen && 'translate-x-0'
+        )}
+        role="complementary"
+        aria-label="Sidebar navigation"
+      >
+        {/* Brand header */}
+        <div className="flex h-20 shrink-0 items-center border-b border-white/10 px-5">
+          <Link
+            to="/dashboard"
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
+            aria-label="EQIP Quality Platform — Go to dashboard"
+          >
+            <BrandLogo variant="light" size="md" tagline="AI Native Enterprise Quality Platform" />
+          </Link>
+        </div>
 
-        {/* Sidebar */}
-        <aside
-          className={cn(
-            'z-40 flex shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-300',
-            // Desktop: always visible, width depends on collapsed state
-            'hidden lg:flex',
-            sidebarOpen ? 'lg:w-64' : 'lg:w-16',
-            // Mobile: overlay positioning
-            sidebarOpen && 'fixed inset-y-0 left-0 top-16 flex w-64 lg:relative lg:top-0'
-          )}
-          role="complementary"
-          aria-label="Sidebar navigation"
-        >
-          <SidebarNav className="flex-1" />
-        </aside>
+        {/* Navigation */}
+        <SidebarNav className="flex-1 min-h-0" />
 
-        {/* Main content area */}
+        {/* Footer */}
+        <div className="shrink-0 border-t border-white/10 px-5 py-4">
+          <p className="text-base font-bold text-white leading-none">
+            Humana<span className="text-humana-green-400">.</span>
+          </p>
+          <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">
+            Quality Without Compromise
+          </p>
+        </div>
+      </aside>
+
+      {/* Main column: header + content */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <TopHeader />
         <main
-          className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden"
+          className="flex-1 overflow-y-auto overflow-x-hidden"
           role="main"
           aria-label="Main content"
         >
-          <div className="flex-1 p-4 lg:p-6">
+          <div className="p-4 lg:p-6">
             <Outlet />
           </div>
         </main>

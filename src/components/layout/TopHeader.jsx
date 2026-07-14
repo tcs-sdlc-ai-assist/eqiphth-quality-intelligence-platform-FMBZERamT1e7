@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
 import { useNavigation } from '@/context/NavigationContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { BrandLogo } from '@/components/shared/BrandLogo';
 import { PersonaSwitcher } from '@/components/layout/PersonaSwitcher';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import { Badge } from '@/components/ui/Badge';
@@ -280,20 +279,8 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
             )}
           </button>
 
-          {/* Brand logo */}
-          <Link
-            to="/dashboard"
-            className={cn(
-              'shrink-0',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2 rounded-md'
-            )}
-            aria-label="EQIP Quality Platform - Go to dashboard"
-          >
-            <BrandLogo variant="dark" size="sm" />
-          </Link>
-
           {/* Breadcrumbs */}
-          <Breadcrumbs items={breadcrumbs} className="ml-2" />
+          <Breadcrumbs items={breadcrumbs} />
         </div>
 
         {/* Right section: search, notifications, help, persona switcher */}

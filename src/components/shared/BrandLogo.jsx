@@ -3,124 +3,95 @@ import PropTypes from 'prop-types';
 import { cn } from '@/lib/utils';
 
 /**
- * Size map for the brand logo component.
- * @type {Object<string, { width: string, height: string, textSize: string }>}
+ * Size map for the brand logo. Controls the mark size and wordmark type scale.
+ * @type {Object<string, { mark: number, eqip: string, tag: string, gap: string }>}
  */
 const sizeMap = {
-  xs: { width: 'w-20', height: 'h-6', textSize: 'text-sm' },
-  sm: { width: 'w-24', height: 'h-7', textSize: 'text-base' },
-  md: { width: 'w-32', height: 'h-8', textSize: 'text-lg' },
-  lg: { width: 'w-40', height: 'h-10', textSize: 'text-xl' },
-  xl: { width: 'w-48', height: 'h-12', textSize: 'text-2xl' },
-  '2xl': { width: 'w-56', height: 'h-14', textSize: 'text-3xl' },
+  xs: { mark: 22, eqip: 'text-base', tag: 'text-[9px]', gap: 'gap-2' },
+  sm: { mark: 26, eqip: 'text-lg', tag: 'text-[10px]', gap: 'gap-2.5' },
+  md: { mark: 32, eqip: 'text-2xl', tag: 'text-[11px]', gap: 'gap-3' },
+  lg: { mark: 38, eqip: 'text-3xl', tag: 'text-xs', gap: 'gap-3' },
+  xl: { mark: 46, eqip: 'text-4xl', tag: 'text-sm', gap: 'gap-3.5' },
+  '2xl': { mark: 56, eqip: 'text-5xl', tag: 'text-base', gap: 'gap-4' },
 };
 
 /**
- * Resolves the logo image source path based on the variant.
- *
- * @param {'light'|'dark'} variant - The logo variant
- * @returns {string} The image source path
- */
-function resolveLogoSrc(variant) {
-  if (variant === 'dark') {
-    return '/brand/eqip-logo-dark.svg';
-  }
-  return '/brand/eqip-logo-light.svg';
-}
-
-/**
- * Brand logo component that renders the EQIP/Humana brand logo from
- * /public/brand/ assets. Supports light/dark variants and configurable
- * size. Falls back to a styled text logo when the image asset fails
- * to load. Used in sidebar, header, and footer.
+ * The EQIP hexagonal cube mark — an isometric hexagon split into blue and
+ * green facets. Rendered inline so it never depends on external assets.
  *
  * @param {object} props
- * @param {'light'|'dark'} [props.variant='light'] - Logo color variant (light for dark backgrounds, dark for light backgrounds)
- * @param {'xs'|'sm'|'md'|'lg'|'xl'|'2xl'} [props.size='md'] - Logo size variant
- * @param {boolean} [props.showText=true] - Whether to show the text fallback when image is unavailable
+ * @param {number} props.size - Pixel width/height of the mark
+ * @returns {React.ReactElement}
+ */
+function EqipMark({ size }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      {/* Top face (green) */}
+      <path d="M24 3 L43 14 L24 25 L5 14 Z" fill="#16b364" />
+      {/* Left face (mid blue) */}
+      <path d="M5 14 L24 25 L24 45 L5 34 Z" fill="#2f6fed" />
+      {/* Right face (deep blue) */}
+      <path d="M43 14 L43 34 L24 45 L24 25 Z" fill="#1b4fc4" />
+      {/* Inner highlight */}
+      <path d="M24 25 L43 14 L24 3 Z" fill="#3acd7e" fillOpacity="0.55" />
+    </svg>
+  );
+}
+
+EqipMark.propTypes = {
+  size: PropTypes.number.isRequired,
+};
+
+/**
+ * Brand logo for the EQIP Quality Platform: an inline geometric hex mark plus
+ * the "EQIP" wordmark and an optional tagline. Supports light (for dark
+ * backgrounds like the sidebar) and dark (for light backgrounds) variants.
+ *
+ * @param {object} props
+ * @param {'light'|'dark'} [props.variant='light'] - Color variant (light = white text for dark backgrounds)
+ * @param {'xs'|'sm'|'md'|'lg'|'xl'|'2xl'} [props.size='md'] - Overall size
+ * @param {string} [props.tagline] - Optional tagline shown under the wordmark
+ * @param {boolean} [props.showText=true] - Whether to render the wordmark next to the mark
  * @param {string} [props.className] - Additional class names for the container
- * @param {string} [props.imgClassName] - Additional class names for the image element
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
 const BrandLogo = forwardRef(function BrandLogo(
-  {
-    variant = 'light',
-    size = 'md',
-    showText = true,
-    className,
-    imgClassName,
-    ...props
-  },
+  { variant = 'light', size = 'md', tagline, showText = true, className, ...props },
   ref
 ) {
-  const resolvedSize = sizeMap[size] || sizeMap.md;
-  const resolvedVariant = variant === 'dark' ? 'dark' : 'light';
-  const logoSrc = resolveLogoSrc(resolvedVariant);
-
-  const textColor =
-    resolvedVariant === 'dark'
-      ? 'text-slate-900'
-      : 'text-white';
-
-  const accentColor =
-    resolvedVariant === 'dark'
-      ? 'text-humana-green-500'
-      : 'text-humana-green-400';
+  const s = sizeMap[size] || sizeMap.md;
+  const isLight = variant !== 'dark';
+  const eqipColor = isLight ? 'text-white' : 'text-navy-900';
+  const tagColor = isLight ? 'text-slate-400' : 'text-slate-500';
 
   return (
     <span
       ref={ref}
-      className={cn(
-        'inline-flex shrink-0 items-center',
-        className
-      )}
+      className={cn('inline-flex items-center', s.gap, className)}
       role="img"
       aria-label="EQIP Quality Platform"
       {...props}
     >
-      <img
-        src={logoSrc}
-        alt="EQIP Quality Platform"
-        className={cn(
-          resolvedSize.width,
-          resolvedSize.height,
-          'object-contain',
-          imgClassName
-        )}
-        draggable={false}
-        onError={(e) => {
-          const target = e.currentTarget;
-          target.style.display = 'none';
-
-          if (!showText) {
-            return;
-          }
-
-          const parent = target.parentElement;
-          if (parent && !parent.querySelector('[data-brand-fallback]')) {
-            const fallback = document.createElement('span');
-            fallback.setAttribute('data-brand-fallback', 'true');
-            fallback.setAttribute('aria-hidden', 'true');
-            fallback.className = cn(
-              'inline-flex items-center gap-1 font-semibold tracking-tight select-none',
-              resolvedSize.textSize,
-              textColor
-            );
-
-            const eqipSpan = document.createElement('span');
-            eqipSpan.className = cn(accentColor, 'font-bold');
-            eqipSpan.textContent = 'EQIP';
-
-            const qualitySpan = document.createElement('span');
-            qualitySpan.textContent = 'Quality';
-
-            fallback.appendChild(eqipSpan);
-            fallback.appendChild(qualitySpan);
-            parent.appendChild(fallback);
-          }
-        }}
-      />
+      <EqipMark size={s.mark} />
+      {showText ? (
+        <span className="flex max-w-[150px] flex-col leading-none">
+          <span className={cn('font-bold tracking-tight', s.eqip, eqipColor)}>EQIP</span>
+          {tagline ? (
+            <span className={cn('mt-1 font-medium leading-tight tracking-wide', s.tag, tagColor)}>
+              {tagline}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
     </span>
   );
 });
@@ -130,9 +101,9 @@ BrandLogo.displayName = 'BrandLogo';
 BrandLogo.propTypes = {
   variant: PropTypes.oneOf(['light', 'dark']),
   size: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl']),
+  tagline: PropTypes.string,
   showText: PropTypes.bool,
   className: PropTypes.string,
-  imgClassName: PropTypes.string,
 };
 
 export { BrandLogo };
