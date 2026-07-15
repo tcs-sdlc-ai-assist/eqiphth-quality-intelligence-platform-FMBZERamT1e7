@@ -191,7 +191,7 @@ function TestExecutionDetailPage() {
   const cellPad = density === 'compact' ? 'py-1' : 'py-3';
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Test Execution</h1>
@@ -219,7 +219,7 @@ function TestExecutionDetailPage() {
           Build History - Member Portal - Regression Suite - Build # 264
         </div>
         <div className="p-5">
-          <div className="h-[280px] w-full">
+          <div className="h-[220px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={BUILDS} margin={{ top: 8, right: 12, left: -12, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />

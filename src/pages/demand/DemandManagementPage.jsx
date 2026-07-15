@@ -293,7 +293,7 @@ const DEMAND_REPORTS = [
  */
 function PanelFooterLink({ label, onClick }) {
   return (
-    <div className="mt-4 -mx-5 -mb-5 border-t border-slate-100">
+    <div className="mt-3 -mx-4 -mb-4 border-t border-slate-100">
       <button
         type="button"
         onClick={onClick}
@@ -432,7 +432,7 @@ function DemandManagementPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
@@ -464,7 +464,7 @@ function DemandManagementPage() {
           <TabsTrigger value="reports">Reports &amp; Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="home" className="flex flex-col gap-6">
+        <TabsContent value="home" className="flex flex-col gap-4">
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {KPIS.map((kpi) => (
@@ -490,10 +490,10 @@ function DemandManagementPage() {
         {/* Demand Pipeline */}
         <PanelCard title="Demand Pipeline" subtitle="(Next 90 Days)">
           <div className="flex items-center gap-2">
-            <div className="relative h-[190px] w-[190px] shrink-0">
+            <div className="relative h-[160px] w-[160px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={PIPELINE} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={88} paddingAngle={2} stroke="none" isAnimationActive={false}>
+                  <Pie data={PIPELINE} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={48} outerRadius={76} paddingAngle={2} stroke="none" isAnimationActive={false}>
                     {PIPELINE.map((d) => (
                       <Cell key={d.name} fill={d.color} />
                     ))}
@@ -569,7 +569,7 @@ function DemandManagementPage() {
 
         {/* Demand vs Capacity Trend */}
         <PanelCard title="Demand vs Capacity Trend">
-          <ChartWrapper height={230} noCard noPadding>
+          <ChartWrapper height={190} noCard noPadding>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={TREND} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -590,7 +590,7 @@ function DemandManagementPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {/* Top Demand by Portfolio */}
         <PanelCard title="Top Demand by Portfolio" subtitle="(Next 90 Days)">
-          <ChartWrapper height={230} noCard noPadding>
+          <ChartWrapper height={190} noCard noPadding>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={PORTFOLIO} layout="vertical" margin={{ top: 4, right: 40, left: 20, bottom: 4 }}>
                 <XAxis type="number" hide />

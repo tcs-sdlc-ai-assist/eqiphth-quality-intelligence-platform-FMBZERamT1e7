@@ -233,7 +233,7 @@ function TrendChartPanel({ trendMetrics, selectedMetric, onMetricChange }) {
         </Tabs>
       }
     >
-      <ChartWrapper height={320} noCard noPadding>
+      <ChartWrapper height={240} noCard noPadding>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={selectedTrend.data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -294,7 +294,7 @@ function SegmentBreakdownPanel({ segments, filterSegment }) {
       subtitle="Quality metrics comparison across organizational segments"
       icon={<BarChart2 className="h-5 w-5" />}
     >
-      <ChartWrapper height={300} noCard noPadding>
+      <ChartWrapper height={220} noCard noPadding>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={filteredSegments} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -386,15 +386,15 @@ function RiskDistributionPanel({ riskDistributions, filterRiskLevel }) {
       icon={<AlertTriangle className="h-5 w-5" />}
     >
       <div className="flex flex-col items-center gap-4 lg:flex-row">
-        <ChartWrapper height={220} noCard noPadding className="flex-1">
+        <ChartWrapper height={170} noCard noPadding className="flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={filteredData}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={85}
+                innerRadius={42}
+                outerRadius={64}
                 paddingAngle={3}
                 dataKey="count"
                 nameKey="level"
@@ -475,15 +475,15 @@ function QualityStatusPanel({ qualityStatusSummaries, filterStatus }) {
       icon={<Shield className="h-5 w-5" />}
     >
       <div className="flex flex-col items-center gap-4 lg:flex-row">
-        <ChartWrapper height={220} noCard noPadding className="flex-1">
+        <ChartWrapper height={170} noCard noPadding className="flex-1">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={filteredData}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={85}
+                innerRadius={42}
+                outerRadius={64}
                 paddingAngle={3}
                 dataKey="count"
                 nameKey="status"

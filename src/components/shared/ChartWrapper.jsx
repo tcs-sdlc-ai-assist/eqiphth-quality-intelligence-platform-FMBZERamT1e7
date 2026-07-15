@@ -216,7 +216,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(
     <div
       className={cn(
         'flex items-start justify-between gap-4',
-        !noPadding && 'px-5 pt-5',
+        !noPadding && 'px-4 pt-4',
         noPadding && 'px-0 pt-0',
         headerClassName
       )}
@@ -289,8 +289,8 @@ const ChartWrapper = forwardRef(function ChartWrapper(
   const bodyContent = (
     <div
       className={cn(
-        !noPadding && hasHeader ? 'px-5 pb-5 pt-3' : '',
-        !noPadding && !hasHeader ? 'p-5' : '',
+        !noPadding && hasHeader ? 'px-4 pb-4 pt-3' : '',
+        !noPadding && !hasHeader ? 'p-4' : '',
         noPadding ? '' : ''
       )}
     >

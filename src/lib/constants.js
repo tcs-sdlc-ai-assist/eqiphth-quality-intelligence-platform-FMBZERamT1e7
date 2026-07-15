@@ -121,6 +121,8 @@ export const STORAGE_KEYS = Object.freeze({
   SELECTED_PERSONA: 'eqip_selected_persona',
   THEME: 'eqip_theme',
   SIDEBAR_COLLAPSED: 'eqip_sidebar_collapsed',
+  SIDEBAR_RAIL_COLLAPSED: 'eqip_sidebar_rail_collapsed',
+  SIDEBAR_WIDTH: 'eqip_sidebar_width',
   DATA_VERSION: 'eqip_data_version',
   FILTERS: 'eqip_filters',
   RECENT_SEARCHES: 'eqip_recent_searches',

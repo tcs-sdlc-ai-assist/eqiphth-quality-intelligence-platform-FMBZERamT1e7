@@ -336,10 +336,10 @@ const KpiCard = forwardRef(function KpiCard(
   const cardContent = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
+        <div className="flex items-start gap-2.5 min-w-0">
           <span
             className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full [&_svg]:h-4 [&_svg]:w-4',
               toneColors.bg,
               toneColors.text
             )}
@@ -364,8 +364,8 @@ const KpiCard = forwardRef(function KpiCard(
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-1 min-w-0">
-        <span className="text-3xl font-bold text-slate-900 tracking-tight truncate">
+      <div className="mt-2 flex flex-col gap-0.5 min-w-0">
+        <span className="text-2xl font-bold text-slate-900 tracking-tight truncate">
           {formattedValue}
         </span>
 
@@ -381,11 +381,11 @@ const KpiCard = forwardRef(function KpiCard(
       </div>
 
       {showSparkline && sparklineData && sparklineData.length >= 2 ? (
-        <Sparkline data={sparklineData} trend={resolvedTrend} className="mt-3" />
+        <Sparkline data={sparklineData} trend={resolvedTrend} className="mt-2" />
       ) : null}
 
       {description ? (
-        <p className="mt-2 text-2xs text-slate-400 line-clamp-2">{description}</p>
+        <p className="mt-1.5 text-2xs text-slate-400 line-clamp-2">{description}</p>
       ) : null}
     </>
   );
@@ -395,7 +395,7 @@ const KpiCard = forwardRef(function KpiCard(
       <Card
         ref={ref}
         className={cn(
-          'p-5 cursor-pointer transition-all duration-200',
+          'p-4 cursor-pointer transition-all duration-200',
           'hover:shadow-card-hover hover:border-humana-green-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2',
           'active:scale-[0.99]',
@@ -421,7 +421,7 @@ const KpiCard = forwardRef(function KpiCard(
   return (
     <Card
       ref={ref}
-      className={cn('p-5', className)}
+      className={cn('p-4', className)}
       aria-label={`${label}: ${formattedValue}`}
       {...props}
     >

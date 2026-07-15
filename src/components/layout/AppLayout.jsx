@@ -2,9 +2,11 @@ import { forwardRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Outlet, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, SIDEBAR_COLLAPSED_WIDTH } from '@/context/NavigationContext';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { SidebarNav } from '@/components/layout/SidebarNav';
+import { SidebarCollapseToggle } from '@/components/layout/SidebarCollapseToggle';
+import { SidebarResizeHandle } from '@/components/layout/SidebarResizeHandle';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { DESIGN_TOKENS } from '@/lib/constants';
 
@@ -22,7 +24,14 @@ import { DESIGN_TOKENS } from '@/lib/constants';
  * @returns {React.ReactElement}
  */
 const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
-  const { sidebarOpen, toggleSidebar } = useNavigation();
+  const {
+    sidebarOpen,
+    toggleSidebar,
+    sidebarCollapsed,
+    toggleSidebarCollapsed,
+    sidebarWidth,
+    setSidebarWidth,
+  } = useNavigation();
 
   const handleOverlayClick = useCallback(() => {
     if (sidebarOpen && window.innerWidth < DESIGN_TOKENS.BREAKPOINTS.LG) {
@@ -47,8 +56,9 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
 
       {/* Sidebar — full height, dark navy */}
       <aside
+        style={{ width: sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth }}
         className={cn(
-          'z-40 flex w-64 shrink-0 flex-col text-slate-300',
+          'relative z-40 flex shrink-0 flex-col text-slate-300',
           'bg-gradient-to-b from-[#102449] to-[#0a1730]',
           // Off-canvas on mobile; static and always visible on desktop
           'fixed inset-y-0 left-0 -translate-x-full transition-transform duration-300 lg:static lg:translate-x-0',
@@ -57,28 +67,61 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
         role="complementary"
         aria-label="Sidebar navigation"
       >
+        {!sidebarCollapsed ? (
+          <SidebarResizeHandle width={sidebarWidth} onResize={setSidebarWidth} />
+        ) : null}
+
         {/* Brand header */}
-        <div className="flex h-20 shrink-0 items-center border-b border-white/10 px-5">
+        <div
+          className={cn(
+            'flex shrink-0 border-b border-white/10',
+            sidebarCollapsed ? 'flex-col items-center gap-2 px-2 py-3' : 'h-20 items-center justify-between gap-2 px-5'
+          )}
+        >
           <Link
             to="/dashboard"
-            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
+            className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
             aria-label="EQIP Quality Platform — Go to dashboard"
           >
-            <BrandLogo variant="light" size="md" tagline="AI Native Enterprise Quality Platform" />
+            <BrandLogo
+              variant="light"
+              size="md"
+              tagline={sidebarCollapsed ? undefined : 'AI Native Enterprise Quality Platform'}
+              showText={!sidebarCollapsed}
+              showHumana={false}
+            />
           </Link>
+          <SidebarCollapseToggle
+            collapsed={sidebarCollapsed}
+            onToggle={toggleSidebarCollapsed}
+            className="hidden shrink-0 border border-white/10 bg-white/5 lg:flex"
+          />
         </div>
 
         {/* Navigation */}
-        <SidebarNav className="flex-1 min-h-0" />
+        <SidebarNav className="flex-1 min-h-0" collapsed={sidebarCollapsed} />
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-white/10 px-5 py-4">
-          <p className="text-base font-bold text-humana-green-400 leading-none">
-            Humana.
-          </p>
-          <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">
-            Quality Without Compromise
-          </p>
+        <div
+          className={cn(
+            'shrink-0 border-t border-white/10 py-4',
+            sidebarCollapsed ? 'flex justify-center px-2' : 'px-5'
+          )}
+        >
+          {sidebarCollapsed ? (
+            <span className="text-base font-bold text-humana-green-400 leading-none" title="Humana. — Quality Without Compromise">
+              H.
+            </span>
+          ) : (
+            <>
+              <p className="text-base font-bold text-humana-green-400 leading-none">
+                Humana.
+              </p>
+              <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">
+                Quality Without Compromise
+              </p>
+            </>
+          )}
         </div>
       </aside>
 

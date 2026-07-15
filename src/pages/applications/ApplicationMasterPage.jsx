@@ -150,16 +150,16 @@ const PAGE_SIZE = 10;
  */
 function ScoreRing({ score }) {
   const color = score >= 85 ? '#16b364' : score >= 70 ? '#f59e0b' : '#ef4444';
-  const r = 16;
+  const r = 12.5;
   const c = 2 * Math.PI * r;
   const offset = c - (score / 100) * c;
   return (
-    <span className="relative inline-flex h-10 w-10 items-center justify-center">
-      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 40 40" aria-hidden="true">
-        <circle cx="20" cy="20" r={r} fill="none" stroke="#e2e8f0" strokeWidth="3" />
-        <circle cx="20" cy="20" r={r} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset} />
+    <span className="relative inline-flex h-8 w-8 items-center justify-center">
+      <svg className="h-8 w-8 -rotate-90" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r={r} fill="none" stroke="#e2e8f0" strokeWidth="2.5" />
+        <circle cx="16" cy="16" r={r} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset} />
       </svg>
-      <span className="absolute text-xs font-semibold text-slate-800">{score}</span>
+      <span className="absolute text-2xs font-semibold text-slate-800">{score}</span>
     </span>
   );
 }
@@ -413,7 +413,7 @@ function ApplicationMasterPage() {
   const capabilityOptions = useMemo(() => [{ value: '', label: 'All' }, ...CAPABILITIES.map((c) => ({ value: c, label: c }))], []);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Application Master</h1>

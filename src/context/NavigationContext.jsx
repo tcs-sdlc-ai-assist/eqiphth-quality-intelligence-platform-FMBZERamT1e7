@@ -33,6 +33,13 @@ import { load, save } from '@/lib/storage';
 
 const NavigationContext = createContext(null);
 
+/** Sidebar width bounds (px) for the drag-to-resize handle. */
+export const SIDEBAR_MIN_WIDTH = 200;
+export const SIDEBAR_MAX_WIDTH = 400;
+export const SIDEBAR_DEFAULT_WIDTH = 256;
+/** Fixed icon-only rail width (px) when the sidebar is collapsed. */
+export const SIDEBAR_COLLAPSED_WIDTH = 76;
+
 /**
  * All possible navigation items in the platform matching the PRD workspaces.
  * @type {NavigationItem[]}
@@ -262,6 +269,30 @@ function resolveInitialSidebarState() {
 }
 
 /**
+ * Resolves the initial desktop sidebar collapsed (icon-only rail) state from
+ * localStorage. Distinct from `STORAGE_KEYS.SIDEBAR_COLLAPSED`, which already
+ * backs the pre-existing mobile overlay open/close toggle.
+ *
+ * @returns {boolean} True if the sidebar should render as a collapsed icon-only rail
+ */
+function resolveInitialCollapsedState() {
+  return load(STORAGE_KEYS.SIDEBAR_RAIL_COLLAPSED, false) === true;
+}
+
+/**
+ * Resolves the initial (persisted) desktop sidebar width in pixels, clamped
+ * to the supported range.
+ *
+ * @returns {number} The initial sidebar width in pixels
+ */
+function resolveInitialSidebarWidth() {
+  const stored = load(STORAGE_KEYS.SIDEBAR_WIDTH, SIDEBAR_DEFAULT_WIDTH);
+  const width = Number(stored);
+  if (!Number.isFinite(width)) return SIDEBAR_DEFAULT_WIDTH;
+  return Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
+}
+
+/**
  * NavigationProvider wraps the application and provides navigation state
  * including sidebar toggle, breadcrumbs, active route detection, and
  * persona-filtered navigation items.
@@ -276,6 +307,8 @@ export function NavigationProvider({ children }) {
 
   const [sidebarOpen, setSidebarOpen] = useState(resolveInitialSidebarState);
   const [breadcrumbs, setBreadcrumbsState] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsedState] = useState(resolveInitialCollapsedState);
+  const [sidebarWidth, setSidebarWidthState] = useState(resolveInitialSidebarWidth);
 
   const activeRoute = useMemo(() => {
     return location.pathname || '/';
@@ -287,6 +320,20 @@ export function NavigationProvider({ children }) {
       save(STORAGE_KEYS.SIDEBAR_COLLAPSED, !next);
       return next;
     });
+  }, []);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsedState((prev) => {
+      const next = !prev;
+      save(STORAGE_KEYS.SIDEBAR_RAIL_COLLAPSED, next);
+      return next;
+    });
+  }, []);
+
+  const setSidebarWidth = useCallback((width) => {
+    const clamped = Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
+    setSidebarWidthState(clamped);
+    save(STORAGE_KEYS.SIDEBAR_WIDTH, clamped);
   }, []);
 
   const setBreadcrumbs = useCallback((newBreadcrumbs) => {
@@ -379,12 +426,16 @@ export function NavigationProvider({ children }) {
     () => ({
       sidebarOpen,
       toggleSidebar,
+      sidebarCollapsed,
+      toggleSidebarCollapsed,
+      sidebarWidth,
+      setSidebarWidth,
       breadcrumbs,
       setBreadcrumbs,
       activeRoute,
       navigationItems,
     }),
-    [sidebarOpen, toggleSidebar, breadcrumbs, setBreadcrumbs, activeRoute, navigationItems]
+    [sidebarOpen, toggleSidebar, sidebarCollapsed, toggleSidebarCollapsed, sidebarWidth, setSidebarWidth, breadcrumbs, setBreadcrumbs, activeRoute, navigationItems]
   );
 
   return (

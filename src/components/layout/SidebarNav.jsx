@@ -111,7 +111,7 @@ const basePath = (to) => to.split('#')[0];
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
-const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) {
+const SidebarNav = forwardRef(function SidebarNav({ className, collapsed = false, ...props }, ref) {
   const { sidebarOpen, toggleSidebar } = useNavigation();
   const { hasPermission } = usePersona();
   const navigate = useNavigate();
@@ -157,7 +157,7 @@ const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) 
   return (
     <nav
       ref={ref}
-      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-5 scrollbar-dark', className)}
+      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden py-5 scrollbar-dark', collapsed ? 'px-2' : 'px-3', className)}
       role="navigation"
       aria-label="Main navigation"
       {...props}
@@ -172,8 +172,11 @@ const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) 
               key={item.id}
               type="button"
               onClick={() => handleNavigate(item.to)}
+              title={collapsed ? item.label : undefined}
+              aria-label={collapsed ? item.label : undefined}
               className={cn(
-                'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'group relative flex w-full items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors',
+                collapsed ? 'justify-center px-2' : 'px-3',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
                 active ? 'bg-humana-green-500/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
               )}
@@ -181,13 +184,55 @@ const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) 
             >
               {active ? <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-humana-green-400" aria-hidden="true" /> : null}
               <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-humana-green-400' : 'text-slate-400 group-hover:text-slate-200')} aria-hidden="true" />
-              <span className="truncate">{item.label}</span>
+              {!collapsed ? <span className="truncate">{item.label}</span> : null}
             </button>
           );
         }
 
         const expanded = isExpanded(item);
         const sectionActive = groupHasActive(item);
+
+        if (collapsed) {
+          return (
+            <div key={item.id} className="group/flyout relative">
+              <button
+                type="button"
+                title={item.label}
+                aria-label={item.label}
+                onClick={() => handleNavigate(item.to || item.children[0].to)}
+                className={cn(
+                  'flex w-full items-center justify-center rounded-lg px-2 py-2.5 transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
+                  sectionActive ? 'bg-humana-green-500/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                )}
+              >
+                <Icon className={cn('h-5 w-5 shrink-0', sectionActive ? 'text-humana-green-400' : 'text-slate-400 group-hover/flyout:text-slate-200')} aria-hidden="true" />
+              </button>
+              <div className="invisible absolute left-full top-0 z-50 ml-1.5 min-w-[13rem] rounded-lg border border-white/10 bg-[#0f213f] py-1.5 opacity-0 shadow-xl transition-opacity group-hover/flyout:visible group-hover/flyout:opacity-100 group-focus-within/flyout:visible group-focus-within/flyout:opacity-100">
+                <p className="px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-slate-500">{item.label}</p>
+                {item.children.map((child) => {
+                  const active = isLeafActive(child.to);
+                  return (
+                    <button
+                      key={child.to}
+                      type="button"
+                      onClick={() => handleNavigate(child.to)}
+                      className={cn(
+                        'flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors',
+                        active ? 'font-medium text-humana-green-400' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                      )}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', active ? 'bg-humana-green-400' : 'bg-slate-600')} aria-hidden="true" />
+                      <span className="truncate">{child.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div key={item.id} className="flex flex-col">
             <button
@@ -239,6 +284,7 @@ SidebarNav.displayName = 'SidebarNav';
 
 SidebarNav.propTypes = {
   className: PropTypes.string,
+  collapsed: PropTypes.bool,
 };
 
 export { SidebarNav };

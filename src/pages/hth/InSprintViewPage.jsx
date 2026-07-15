@@ -190,7 +190,7 @@ function InSprintViewPage() {
   const cellPad = density === 'compact' ? 'py-1' : 'py-2.5';
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">In-Sprint View</h1>
@@ -198,7 +198,7 @@ function InSprintViewPage() {
       </div>
 
       {/* Filter row */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-card">
         {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
       </div>
 
@@ -258,7 +258,7 @@ function InSprintViewPage() {
 
         {/* Jira Trends */}
         <PanelCard title="Jira Trends" actions={<Toggle options={['In-Sprint Automation', 'Test Cases', 'Stories']} value={trendView} onChange={setTrendView} />}>
-          <div className="h-[220px] w-full">
+          <div className="h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={JIRA_TREND} margin={{ top: 8, right: 12, left: -12, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />

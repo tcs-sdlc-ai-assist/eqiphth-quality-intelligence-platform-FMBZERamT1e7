@@ -2,9 +2,11 @@ import { forwardRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Outlet, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, SIDEBAR_COLLAPSED_WIDTH } from '@/context/NavigationContext';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { HTHSidebarNav } from '@/components/layout/HTHSidebarNav';
+import { SidebarCollapseToggle } from '@/components/layout/SidebarCollapseToggle';
+import { SidebarResizeHandle } from '@/components/layout/SidebarResizeHandle';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { DESIGN_TOKENS, ROUTES } from '@/lib/constants';
 
@@ -21,7 +23,14 @@ import { DESIGN_TOKENS, ROUTES } from '@/lib/constants';
  * @returns {React.ReactElement}
  */
 const HTHLayout = forwardRef(function HTHLayout({ className, ...props }, ref) {
-  const { sidebarOpen, toggleSidebar } = useNavigation();
+  const {
+    sidebarOpen,
+    toggleSidebar,
+    sidebarCollapsed,
+    toggleSidebarCollapsed,
+    sidebarWidth,
+    setSidebarWidth,
+  } = useNavigation();
 
   const handleOverlayClick = useCallback(() => {
     if (sidebarOpen && window.innerWidth < DESIGN_TOKENS.BREAKPOINTS.LG) {
@@ -46,8 +55,9 @@ const HTHLayout = forwardRef(function HTHLayout({ className, ...props }, ref) {
 
       {/* Sidebar — full height, dark navy */}
       <aside
+        style={{ width: sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth }}
         className={cn(
-          'z-40 flex w-64 shrink-0 flex-col text-slate-300',
+          'relative z-40 flex shrink-0 flex-col text-slate-300',
           'bg-gradient-to-b from-[#102449] to-[#0a1730]',
           'fixed inset-y-0 left-0 -translate-x-full transition-transform duration-300 lg:static lg:translate-x-0',
           sidebarOpen && 'translate-x-0'
@@ -55,32 +65,75 @@ const HTHLayout = forwardRef(function HTHLayout({ className, ...props }, ref) {
         role="complementary"
         aria-label="Humana Test Harness sidebar"
       >
+        {!sidebarCollapsed ? (
+          <SidebarResizeHandle width={sidebarWidth} onResize={setSidebarWidth} />
+        ) : null}
+
         {/* Brand header */}
-        <div className="flex shrink-0 flex-col border-b border-white/10 px-5 py-4">
-          <Link
-            to="/dashboard"
-            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
-            aria-label="EQIP Quality Platform — Go to dashboard"
-          >
-            <BrandLogo variant="light" size="sm" />
-          </Link>
-          <div className="mt-3 border-t border-white/10 pt-3">
-            <Link to={ROUTES.HTH} className="text-sm font-bold leading-tight text-white hover:text-humana-green-300">
-              Humana Test Harness (HTH)
+        {sidebarCollapsed ? (
+          <div className="flex shrink-0 flex-col items-center gap-2 border-b border-white/10 px-2 py-3">
+            <Link
+              to="/dashboard"
+              className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
+              aria-label="EQIP Quality Platform — Go to dashboard"
+            >
+              <BrandLogo variant="light" size="sm" showText={false} />
             </Link>
-            <p className="mt-1 text-2xs leading-snug text-slate-400">
-              Intelligent orchestration. Seamless execution. Quality at speed.
-            </p>
+            <Link
+              to={ROUTES.HTH}
+              title="Humana Test Harness (HTH)"
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-white/5 text-2xs font-bold text-white hover:text-humana-green-300"
+            >
+              HTH
+            </Link>
+            <SidebarCollapseToggle
+              collapsed={sidebarCollapsed}
+              onToggle={toggleSidebarCollapsed}
+              className="hidden border border-white/10 bg-white/5 lg:flex"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="flex shrink-0 flex-col border-b border-white/10 px-5 py-4">
+            <div className="flex items-start justify-between gap-2">
+              <Link
+                to="/dashboard"
+                className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
+                aria-label="EQIP Quality Platform — Go to dashboard"
+              >
+                <BrandLogo variant="light" size="sm" />
+              </Link>
+              <SidebarCollapseToggle
+                collapsed={sidebarCollapsed}
+                onToggle={toggleSidebarCollapsed}
+                className="hidden shrink-0 border border-white/10 bg-white/5 lg:flex"
+              />
+            </div>
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <Link to={ROUTES.HTH} className="text-sm font-bold leading-tight text-white hover:text-humana-green-300">
+                Humana Test Harness (HTH)
+              </Link>
+              <p className="mt-1 text-2xs leading-snug text-slate-400">
+                Intelligent orchestration. Seamless execution. Quality at speed.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
-        <HTHSidebarNav className="flex-1 min-h-0" />
+        <HTHSidebarNav className="flex-1 min-h-0" collapsed={sidebarCollapsed} />
 
         {/* Footer */}
-        <div className="shrink-0 border-t border-white/10 px-5 py-4">
-          <p className="text-base font-bold text-humana-green-400 leading-none">Humana.</p>
-          <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">Quality Without Compromise</p>
+        <div className={cn('shrink-0 border-t border-white/10 py-4', sidebarCollapsed ? 'flex justify-center px-2' : 'px-5')}>
+          {sidebarCollapsed ? (
+            <span className="text-base font-bold text-humana-green-400 leading-none" title="Humana. — Quality Without Compromise">
+              H.
+            </span>
+          ) : (
+            <>
+              <p className="text-base font-bold text-humana-green-400 leading-none">Humana.</p>
+              <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">Quality Without Compromise</p>
+            </>
+          )}
         </div>
       </aside>
 

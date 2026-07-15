@@ -79,13 +79,13 @@ const PanelCard = forwardRef(function PanelCard(
       {hasHeader ? (
         <div
           className={cn(
-            'flex items-start justify-between gap-4 p-5',
+            'flex items-start justify-between gap-3 p-4',
             !noBorder && children ? 'border-b border-slate-200' : '',
             isCollapsed && !noBorder ? 'border-b-0' : '',
             headerClassName
           )}
         >
-          <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
             {icon ? (
               <span className="shrink-0 mt-0.5 text-slate-400" aria-hidden="true">
                 {icon}
@@ -139,8 +139,8 @@ const PanelCard = forwardRef(function PanelCard(
       {isCollapsed ? null : (
         <div
           className={cn(
-            noPadding ? '' : 'p-5',
-            hasHeader && !noPadding ? 'pt-4' : '',
+            noPadding ? '' : 'p-4',
+            hasHeader && !noPadding ? 'pt-3' : '',
             bodyClassName
           )}
         >

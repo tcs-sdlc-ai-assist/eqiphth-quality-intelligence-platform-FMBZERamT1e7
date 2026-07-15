@@ -62,13 +62,16 @@ const FAVORITED_SUITES = [
  * A single nav row: icon + label, with active/hover styling matching the
  * main SidebarNav's visual language.
  */
-function NavRow({ label, to, icon: Icon, active, onNavigate }) {
+function NavRow({ label, to, icon: Icon, active, onNavigate, collapsed }) {
   return (
     <button
       type="button"
       onClick={() => onNavigate(to)}
+      title={collapsed ? label : undefined}
+      aria-label={collapsed ? label : undefined}
       className={cn(
-        'group relative flex w-full items-center gap-2.5 rounded-lg py-2 pl-4 pr-3 text-left text-sm transition-colors',
+        'group relative flex w-full items-center gap-2.5 rounded-lg py-2 text-left text-sm transition-colors',
+        collapsed ? 'justify-center px-2' : 'pl-4 pr-3',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
         active ? 'bg-humana-green-500/15 font-medium text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
       )}
@@ -76,7 +79,7 @@ function NavRow({ label, to, icon: Icon, active, onNavigate }) {
     >
       {active ? <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-humana-green-400" aria-hidden="true" /> : null}
       <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-humana-green-400' : 'text-slate-400 group-hover:text-slate-200')} aria-hidden="true" />
-      <span className="truncate">{label}</span>
+      {!collapsed ? <span className="truncate">{label}</span> : null}
     </button>
   );
 }
@@ -87,6 +90,7 @@ NavRow.propTypes = {
   icon: PropTypes.elementType.isRequired,
   active: PropTypes.bool,
   onNavigate: PropTypes.func.isRequired,
+  collapsed: PropTypes.bool,
 };
 
 /**
@@ -101,7 +105,7 @@ NavRow.propTypes = {
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
-const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, ...props }, ref) {
+const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, collapsed = false, ...props }, ref) {
   const { sidebarOpen, toggleSidebar } = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,7 +123,7 @@ const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, ...props },
   return (
     <nav
       ref={ref}
-      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-dark', className)}
+      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden py-4 scrollbar-dark', collapsed ? 'px-2' : 'px-3', className)}
       role="navigation"
       aria-label="Humana Test Harness navigation"
       {...props}
@@ -127,63 +131,87 @@ const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, ...props },
       <button
         type="button"
         onClick={() => handleNavigate(ROUTES.DASHBOARD)}
-        className="mb-1 flex w-full items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+        title={collapsed ? 'Back to EQIP' : undefined}
+        aria-label={collapsed ? 'Back to EQIP' : undefined}
+        className={cn(
+          'mb-1 flex w-full items-center gap-2 rounded-lg py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-white',
+          collapsed ? 'justify-center px-2' : 'px-4'
+        )}
       >
         <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Back to EQIP
+        {!collapsed ? 'Back to EQIP' : null}
       </button>
-      <div className="mb-1 border-t border-white/10" aria-hidden="true" />
+      <div className={cn('mb-1 border-t border-white/10', collapsed ? 'mx-1' : '')} aria-hidden="true" />
 
-      <NavRow label="HTH Home" to={ROUTES.HTH} icon={Home} active={isActive(ROUTES.HTH)} onNavigate={handleNavigate} />
+      <NavRow label="HTH Home" to={ROUTES.HTH} icon={Home} active={isActive(ROUTES.HTH)} onNavigate={handleNavigate} collapsed={collapsed} />
 
-      <div className="mt-3 px-4 text-2xs font-semibold uppercase tracking-wider text-slate-500">Analytics</div>
+      {!collapsed ? <div className="mt-3 px-4 text-2xs font-semibold uppercase tracking-wider text-slate-500">Analytics</div> : <div className="mt-3 mx-1 border-t border-white/10" aria-hidden="true" />}
       {ANALYTICS_ITEMS.map((item) => (
-        <NavRow key={item.to} label={item.label} to={item.to} icon={item.icon} active={isActive(item.to)} onNavigate={handleNavigate} />
+        <NavRow key={item.to} label={item.label} to={item.to} icon={item.icon} active={isActive(item.to)} onNavigate={handleNavigate} collapsed={collapsed} />
       ))}
 
-      <div className="mt-3 px-4 text-2xs font-semibold uppercase tracking-wider text-slate-500">Inventory</div>
+      {!collapsed ? <div className="mt-3 px-4 text-2xs font-semibold uppercase tracking-wider text-slate-500">Inventory</div> : <div className="mt-3 mx-1 border-t border-white/10" aria-hidden="true" />}
       {INVENTORY_ITEMS.map((item) => (
-        <NavRow key={item.to} label={item.label} to={item.to} icon={item.icon} active={isActive(item.to)} onNavigate={handleNavigate} />
+        <NavRow key={item.to} label={item.label} to={item.to} icon={item.icon} active={isActive(item.to)} onNavigate={handleNavigate} collapsed={collapsed} />
       ))}
 
-      <div className="my-1 mx-4 border-t border-white/10" aria-hidden="true" />
+      <div className={cn('my-1 border-t border-white/10', collapsed ? 'mx-1' : 'mx-4')} aria-hidden="true" />
       {MORE_ITEMS.map((item) => (
-        <NavRow key={item.to} label={item.label} to={item.to} icon={item.icon} active={isActive(item.to)} onNavigate={handleNavigate} />
+        <NavRow key={item.to} label={item.label} to={item.to} icon={item.icon} active={isActive(item.to)} onNavigate={handleNavigate} collapsed={collapsed} />
       ))}
 
-      <button
-        type="button"
-        onClick={() => setFavoritesOpen((o) => !o)}
-        className="mt-3 flex w-full items-center gap-2 rounded-lg px-4 py-2 text-2xs font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300"
-        aria-expanded={favoritesOpen}
-      >
-        <Star className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span className="flex-1 text-left">Favorited Test Suites</span>
-        {favoritesOpen ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
-      </button>
-      {favoritesOpen ? (
-        <div className="flex flex-col gap-0.5 pl-2">
-          {FAVORITED_SUITES.map((s) => (
-            <button
-              key={s.to}
-              type="button"
-              onClick={() => handleNavigate(s.to)}
-              className="flex items-center gap-2.5 rounded-lg py-1.5 pl-6 pr-3 text-left text-xs text-slate-400 transition-colors hover:text-slate-100"
-            >
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-600" aria-hidden="true" />
-              <span className="truncate">{s.label}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
+      {collapsed ? (
+        <button
+          type="button"
+          onClick={() => handleNavigate(FAVORITED_SUITES[0].to)}
+          title="Favorited Test Suites"
+          aria-label="Favorited Test Suites"
+          className="mt-3 flex w-full items-center justify-center rounded-lg px-2 py-2 text-slate-500 hover:text-slate-300"
+        >
+          <Star className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => setFavoritesOpen((o) => !o)}
+            className="mt-3 flex w-full items-center gap-2 rounded-lg px-4 py-2 text-2xs font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-300"
+            aria-expanded={favoritesOpen}
+          >
+            <Star className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="flex-1 text-left">Favorited Test Suites</span>
+            {favoritesOpen ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
+          </button>
+          {favoritesOpen ? (
+            <div className="flex flex-col gap-0.5 pl-2">
+              {FAVORITED_SUITES.map((s) => (
+                <button
+                  key={s.to}
+                  type="button"
+                  onClick={() => handleNavigate(s.to)}
+                  className="flex items-center gap-2.5 rounded-lg py-1.5 pl-6 pr-3 text-left text-xs text-slate-400 transition-colors hover:text-slate-100"
+                >
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-600" aria-hidden="true" />
+                  <span className="truncate">{s.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </>
+      )}
 
       <div className="mt-auto pt-3">
         <Link
           to={`${ROUTES.HELP}#documentation`}
-          className="flex items-center gap-2.5 rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
+          title={collapsed ? 'HTH Docs & Support' : undefined}
+          aria-label={collapsed ? 'HTH Docs & Support' : undefined}
+          className={cn(
+            'flex items-center gap-2.5 rounded-lg py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100',
+            collapsed ? 'justify-center px-2' : 'px-4'
+          )}
         >
           <LifeBuoy className="h-4 w-4 shrink-0" aria-hidden="true" />
-          HTH Docs &amp; Support
+          {!collapsed ? <>HTH Docs &amp; Support</> : null}
         </Link>
       </div>
     </nav>
@@ -194,6 +222,7 @@ HTHSidebarNav.displayName = 'HTHSidebarNav';
 
 HTHSidebarNav.propTypes = {
   className: PropTypes.string,
+  collapsed: PropTypes.bool,
 };
 
 export { HTHSidebarNav };

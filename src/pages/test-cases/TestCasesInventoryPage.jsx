@@ -174,7 +174,7 @@ function TestCasesInventoryPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Test Cases</h1>
