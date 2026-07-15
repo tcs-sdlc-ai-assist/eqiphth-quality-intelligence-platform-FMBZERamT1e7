@@ -21,7 +21,24 @@ import { PanelCard } from '@/components/shared/PanelCard';
 import { StatusPill } from '@/components/shared/StatusPill';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
+import { Switch } from '@/components/ui/Switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/Dialog';
 import { ROUTES } from '@/lib/constants';
+
+const FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'on_commit', label: 'On Commit' },
+  { value: 'manual', label: 'Manual' },
+];
 
 const MOCK_SUITE_DETAILS = {
   'suite-101': {
@@ -76,6 +93,9 @@ export function TestSuiteDetailPage() {
   const { toast } = useToast();
 
   const [suite, setSuite] = useState(null);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [frequency, setFrequency] = useState('daily');
+  const [notifyOnFailure, setNotifyOnFailure] = useState(true);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -89,6 +109,7 @@ export function TestSuiteDetailPage() {
   useEffect(() => {
     const data = MOCK_SUITE_DETAILS[suiteId] || MOCK_SUITE_DETAILS['suite-101'];
     setSuite(data);
+    setFrequency(data.frequency);
   }, [suiteId]);
 
   if (!suite) {
@@ -101,6 +122,12 @@ export function TestSuiteDetailPage() {
       description: `Test Suite ${suite.name} is now executing in ${suite.envReqs}.`,
       variant: 'success',
     });
+  };
+
+  const handleSaveConfig = () => {
+    setSuite((prev) => ({ ...prev, frequency }));
+    toast({ variant: 'success', title: 'Configuration saved', description: `${suite.name} will now run ${FREQUENCY_OPTIONS.find((f) => f.value === frequency)?.label.toLowerCase()}.` });
+    setConfigOpen(false);
   };
 
   return (
@@ -126,7 +153,7 @@ export function TestSuiteDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" iconLeft={<Settings className="h-4 w-4" />}>Configure</Button>
+          <Button variant="outline" iconLeft={<Settings className="h-4 w-4" />} onClick={() => setConfigOpen(true)}>Configure</Button>
           <Button variant="primary" iconLeft={<Play className="h-4 w-4" />} onClick={handleRunSuite}>
             Run Test Suite
           </Button>
@@ -135,10 +162,10 @@ export function TestSuiteDetailPage() {
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Included Test Cases" value={suite.testCount.toString()} trend="stable" changePercent="Active registry" status="info" />
-        <KpiCard label="Automation Coverage" value={`${suite.coverage}%`} trend="stable" changePercent="Execution split" status="success" />
-        <KpiCard label="Average Pass Rate" value={`${suite.passRate}%`} trend="up" changePercent="Last 20 builds" status={suite.passRate >= 90 ? 'success' : 'warning'} />
-        <KpiCard label="Average Duration" value={suite.avgDuration} trend="down" changePercent="Optimization check" status="info" />
+        <KpiCard label="Included Test Cases" value={suite.testCount.toString()} trend="stable" description="Active registry" status="completed" />
+        <KpiCard label="Automation Coverage" value={`${suite.coverage}%`} trend="stable" description="Execution split" status="on_track" />
+        <KpiCard label="Average Pass Rate" value={`${suite.passRate}%`} trend="improving" description="Last 20 builds" status={suite.passRate >= 90 ? 'on_track' : 'at_risk'} />
+        <KpiCard label="Average Duration" value={suite.avgDuration} trend="declining" description="Optimization check" status="completed" />
       </div>
 
       {/* Reqs and Cases */}
@@ -203,6 +230,27 @@ export function TestSuiteDetailPage() {
           </div>
         </PanelCard>
       </div>
+
+      {/* Configure suite dialog */}
+      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configure Test Suite</DialogTitle>
+            <DialogDescription>Execution settings for {suite.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex flex-col gap-4">
+            <Select label="Execution Frequency" value={frequency} onValueChange={setFrequency} options={FREQUENCY_OPTIONS} />
+            <div className="rounded-lg border border-slate-200 p-3 text-xs text-slate-500">
+              <span className="font-medium text-slate-700">Target Environment:</span> {suite.envReqs}
+            </div>
+            <Switch label="Notify owner on failure" description="Send an alert to the suite owner when a run fails." checked={notifyOnFailure} onCheckedChange={setNotifyOnFailure} />
+          </div>
+          <DialogFooter className="pt-4">
+            <Button variant="outline" size="md" onClick={() => setConfigOpen(false)}>Cancel</Button>
+            <Button variant="primary" size="md" onClick={handleSaveConfig}>Save Configuration</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

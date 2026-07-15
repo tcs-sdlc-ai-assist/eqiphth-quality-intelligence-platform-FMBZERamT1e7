@@ -9,6 +9,11 @@ import {
   SiDynatrace,
   SiSplunk,
   SiOkta,
+  SiReact,
+  SiAngular,
+  SiNodedotjs,
+  SiPython,
+  SiDotnet,
 } from 'react-icons/si';
 import { cn } from '@/lib/utils';
 
@@ -67,6 +72,19 @@ function resolveIconComponent(name) {
       return SiOkta;
     case 'power bi':
       return null;
+    case 'react':
+      return SiReact;
+    case 'angular':
+      return SiAngular;
+    case 'node':
+    case 'node.js':
+    case 'nodejs':
+      return SiNodedotjs;
+    case 'python':
+      return SiPython;
+    case '.net':
+    case 'dotnet':
+      return SiDotnet;
     default:
       return null;
   }

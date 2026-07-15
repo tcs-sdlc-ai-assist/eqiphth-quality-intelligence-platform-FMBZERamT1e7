@@ -35,6 +35,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/Dialog';
+import { Badge } from '@/components/ui/Badge';
 import { ROUTES } from '@/lib/constants';
 
 /* Mock data mirrors Docs/mocks/07-test-execution-detail.png (frontend-only). */
@@ -77,6 +85,16 @@ const RESULTS = [
   { keys: ['MPR-RGR-39677'], summary: 'Provider Search: Validate distance filter within 25 miles', error: 'Assertion error: results empty' },
 ];
 const PAGE_SIZE = 8;
+
+/** Deterministic mock prior-run history for a result row's History dialog. */
+function getRunHistory() {
+  const statuses = ['ERROR', 'ERROR', 'PASSED', 'ERROR', 'PASSED'];
+  return BUILDS.slice(-5).map((b, i) => ({
+    build: b.build,
+    status: statuses[i],
+    duration: `${18 + ((i * 7) % 20)}m`,
+  }));
+}
 
 const FILTERS_1 = [
   { label: 'Segment', options: ['Insurance', 'CenterWell'] },
@@ -126,6 +144,9 @@ function TestExecutionDetailPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [hiddenCols, setHiddenCols] = useState(() => new Set());
   const [density, setDensity] = useState('comfortable');
+  const [historyRow, setHistoryRow] = useState(null);
+  const [reportRow, setReportRow] = useState(null);
+  const [buildSummaryOpen, setBuildSummaryOpen] = useState(false);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -185,7 +206,7 @@ function TestExecutionDetailPage() {
         </div>
         <div className="flex flex-wrap items-end gap-3">
           {FILTERS_2.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
-          <button type="button" onClick={() => toast({ variant: 'success', title: 'Report emailed', description: 'Execution report queued for delivery (demo).' })} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-navy-900 px-4 text-sm font-medium text-white hover:bg-navy-800"><Mail className="h-4 w-4" /> Email</button>
+          <button type="button" onClick={() => toast({ variant: 'success', title: 'Report emailed', description: 'Execution report has been emailed to your inbox.' })} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-navy-900 px-4 text-sm font-medium text-white hover:bg-navy-800"><Mail className="h-4 w-4" /> Email</button>
           <button type="button" onClick={() => setStarred((s) => !s)} className={cn('inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50', starred ? 'text-warning-500' : 'text-slate-400')} aria-label="Favourite this execution">
             <Star className={cn('h-4 w-4', starred && 'fill-current')} />
           </button>
@@ -226,7 +247,7 @@ function TestExecutionDetailPage() {
         <div className="rounded-lg border border-slate-200 px-3 py-1.5"><span className="text-slate-500">Testing Type:</span> <span className="font-medium text-slate-800">Regression</span></div>
         <div className="w-full flex items-center gap-3 border-t border-slate-100 pt-3">
           <span><span className="text-slate-500">Execution Date:</span> <span className="font-medium text-slate-800">2026-04-10T12:53:00.223</span></span>
-          <button type="button" onClick={() => toast({ variant: 'info', title: 'Build Summary Report', description: 'Would open the full Jenkins build report in production.' })} className="inline-flex items-center gap-1 text-sm font-medium text-info-600 hover:text-info-700"><FileText className="h-4 w-4" /> Build Summary Report</button>
+          <button type="button" onClick={() => setBuildSummaryOpen(true)} className="inline-flex items-center gap-1 text-sm font-medium text-info-600 hover:text-info-700"><FileText className="h-4 w-4" /> Build Summary Report</button>
         </div>
       </div>
 
@@ -280,14 +301,14 @@ function TestExecutionDetailPage() {
             <tbody>
               {pageRows.map((r) => (
                 <tr key={r.keys[0]} className="border-b border-slate-100 align-top hover:bg-slate-50/60">
-                  {isColVisible('history') ? <td className={cn('px-3 text-slate-400', cellPad)}><History className="h-4 w-4" /></td> : null}
-                  {isColVisible('report') ? <td className={cn('px-3 text-slate-400', cellPad)}><ExternalLink className="h-4 w-4" /></td> : null}
+                  {isColVisible('history') ? <td className={cn('px-3 text-slate-400', cellPad)}><button type="button" onClick={() => setHistoryRow(r)} className="hover:text-info-600" aria-label={`View run history for ${r.keys[0]}`}><History className="h-4 w-4" /></button></td> : null}
+                  {isColVisible('report') ? <td className={cn('px-3 text-slate-400', cellPad)}><button type="button" onClick={() => setReportRow(r)} className="hover:text-info-600" aria-label={`View report for ${r.keys[0]}`}><ExternalLink className="h-4 w-4" /></button></td> : null}
                   {isColVisible('status') ? <td className={cn('px-3', cellPad)}><span className="inline-flex items-center gap-1 font-medium text-danger-600"><XCircle className="h-4 w-4" /> ERROR</span></td> : null}
                   {isColVisible('analysis') ? <td className={cn('px-3 text-slate-500', cellPad)}>Not Started</td> : null}
                   {isColVisible('key') ? (
                     <td className={cn('px-3', cellPad)}>
                       <div className="flex flex-col gap-0.5">
-                        {r.keys.map((k) => <span key={k} className="font-medium text-info-600 hover:underline cursor-pointer">{k}</span>)}
+                        {r.keys.map((k) => <button key={k} type="button" onClick={() => setReportRow(r)} className="text-left font-medium text-info-600 hover:underline">{k}</button>)}
                       </div>
                     </td>
                   ) : null}
@@ -305,6 +326,76 @@ function TestExecutionDetailPage() {
           <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} className="rounded-md p-1 hover:bg-slate-100 disabled:opacity-40" aria-label="Next page"><ChevronRight className="h-4 w-4" /></button>
         </div>
       </div>
+
+      {/* Build Summary Report dialog */}
+      <Dialog open={buildSummaryOpen} onOpenChange={setBuildSummaryOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Build Summary Report — Build #264</DialogTitle>
+            <DialogDescription>Member Portal Regression Suite</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Pipeline</p><p className="font-medium text-slate-800">Member Portal Release</p></div>
+            <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Environment</p><p className="font-medium text-slate-800">QA</p></div>
+            <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Passed</p><p className="font-medium text-success-600">485</p></div>
+            <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Failed</p><p className="font-medium text-danger-600">52</p></div>
+            <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Duration</p><p className="font-medium text-slate-800">1h 18m</p></div>
+            <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Triggered By</p><p className="font-medium text-slate-800">Scheduled Run</p></div>
+          </div>
+          <p className="mt-3 text-2xs text-slate-400">Report path: \\EDIDVUCHCMW01\Jenkins.Reports\CSDQ</p>
+        </DialogContent>
+      </Dialog>
+
+      {/* Run history dialog */}
+      <Dialog open={Boolean(historyRow)} onOpenChange={(o) => !o && setHistoryRow(null)}>
+        <DialogContent className="max-w-md">
+          {historyRow ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Run History</DialogTitle>
+                <DialogDescription>{historyRow.keys[0]} — last 5 executions</DialogDescription>
+              </DialogHeader>
+              <div className="mt-2 flex flex-col divide-y divide-slate-100">
+                {getRunHistory().map((h) => (
+                  <div key={h.build} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 text-sm">
+                    <span className="font-medium text-slate-800">Build #{h.build}</span>
+                    <span className="text-slate-500">{h.duration}</span>
+                    <Badge variant={h.status === 'PASSED' ? 'success' : 'error'} size="sm">{h.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Test report dialog */}
+      <Dialog open={Boolean(reportRow)} onOpenChange={(o) => !o && setReportRow(null)}>
+        <DialogContent className="max-w-lg">
+          {reportRow ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Test Report</DialogTitle>
+                <DialogDescription>{reportRow.keys.join(', ')}</DialogDescription>
+              </DialogHeader>
+              <div className="mt-2 flex flex-col gap-3 text-sm">
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-slate-400">Summary</p>
+                  <p className="mt-1 text-slate-700">{reportRow.summary}</p>
+                </div>
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-slate-400">Error</p>
+                  <p className="mt-1 rounded-lg bg-danger-50 px-3 py-2 font-mono text-xs text-danger-700">{reportRow.error}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Browser</p><p className="font-medium text-slate-800">Chrome</p></div>
+                  <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xs text-slate-400">Build</p><p className="font-medium text-slate-800">#264</p></div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { cn, downloadCSV } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
+import { IntegrationLogo } from '@/components/shared/IntegrationLogo';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -138,11 +139,6 @@ function buildApplications() {
 
 const CRIT_DOT = { High: 'bg-danger-500', Medium: 'bg-warning-500', Low: 'bg-success-500' };
 const STAGE_VARIANT = { Production: 'success', UAT: 'info', Dev: 'neutral' };
-const TECH_COLOR = {
-  Java: 'bg-orange-100 text-orange-800', '.NET': 'bg-violet-100 text-violet-800', React: 'bg-cyan-100 text-cyan-800',
-  Angular: 'bg-red-100 text-red-800', AWS: 'bg-amber-100 text-amber-800', Azure: 'bg-blue-100 text-blue-800',
-  SQL: 'bg-slate-200 text-slate-800', Node: 'bg-green-100 text-green-800', Python: 'bg-blue-100 text-blue-800', BI: 'bg-emerald-100 text-emerald-800',
-};
 const PAGE_SIZE = 10;
 
 /**
@@ -549,7 +545,9 @@ function ApplicationMasterPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           {app.tech.map((t) => (
-                            <span key={t} className={cn('rounded px-1.5 py-0.5 text-2xs font-medium', TECH_COLOR[t] || 'bg-slate-100 text-slate-700')}>{t}</span>
+                            <span key={t} title={t} className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-slate-100 bg-slate-50">
+                              <IntegrationLogo name={t} size="xs" />
+                            </span>
                           ))}
                           {app.extra ? <span className="text-2xs text-slate-400">+{app.extra}</span> : null}
                         </div>
