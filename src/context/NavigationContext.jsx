@@ -36,7 +36,7 @@ const NavigationContext = createContext(null);
 /** Sidebar width bounds (px) for the drag-to-resize handle. */
 export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 400;
-export const SIDEBAR_DEFAULT_WIDTH = 256;
+export const SIDEBAR_DEFAULT_WIDTH = 340;
 /** Fixed icon-only rail width (px) when the sidebar is collapsed. */
 export const SIDEBAR_COLLAPSED_WIDTH = 76;
 
