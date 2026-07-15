@@ -75,7 +75,7 @@ function LoginPage() {
     <div className="flex min-h-screen bg-slate-50">
       {/* Brand panel */}
       <div className="relative hidden w-1/2 flex-col justify-between bg-gradient-to-br from-[#102449] to-[#0a1730] p-12 text-white lg:flex">
-        <BrandLogo variant="light" size="lg" tagline="AI Native Enterprise Quality Platform" />
+        <BrandLogo variant="light" size="lg" />
 
         <div className="max-w-md">
           <h1 className="text-4xl font-bold leading-tight text-white">Quality Without Compromise.</h1>
@@ -108,7 +108,7 @@ function LoginPage() {
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden">
-            <BrandLogo variant="dark" size="md" tagline="AI Native Enterprise Quality Platform" />
+            <BrandLogo variant="dark" size="md" />
           </div>
 
           <h2 className="text-2xl font-semibold text-slate-900">Sign in</h2>

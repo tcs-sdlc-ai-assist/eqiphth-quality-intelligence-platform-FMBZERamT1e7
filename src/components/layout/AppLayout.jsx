@@ -71,13 +71,8 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
           <SidebarResizeHandle width={sidebarWidth} onResize={setSidebarWidth} />
         ) : null}
 
-        {/* Brand header */}
-        <div
-          className={cn(
-            'flex shrink-0 border-b border-white/10',
-            sidebarCollapsed ? 'flex-col items-center gap-2 px-2 py-3' : 'h-20 items-center justify-between gap-2 px-5'
-          )}
-        >
+        {/* Brand header — logo at the top of the sidebar */}
+        <div className="relative flex shrink-0 flex-col items-start justify-center gap-1 border-b border-white/10 px-2 py-4">
           <Link
             to="/dashboard"
             className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
@@ -86,7 +81,6 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
             <BrandLogo
               variant="light"
               size="md"
-              tagline={sidebarCollapsed ? undefined : 'AI Native Enterprise Quality Platform'}
               showText={!sidebarCollapsed}
               showHumana={false}
             />
@@ -94,7 +88,7 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
           <SidebarCollapseToggle
             collapsed={sidebarCollapsed}
             onToggle={toggleSidebarCollapsed}
-            className="hidden shrink-0 border border-white/10 bg-white/5 lg:flex"
+            className="absolute right-2 top-2 z-20 hidden border border-white/10 bg-white/5 lg:flex"
           />
         </div>
 

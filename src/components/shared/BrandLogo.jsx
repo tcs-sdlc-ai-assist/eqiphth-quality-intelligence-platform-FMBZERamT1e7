@@ -3,100 +3,99 @@ import PropTypes from 'prop-types';
 import { cn } from '@/lib/utils';
 
 /**
- * Size map for the brand logo. Controls the mark size and wordmark type scale.
- * @type {Object<string, { mark: number, eqip: string, tag: string, gap: string }>}
+ * Size map for the brand logo — pixel height of the rendered artwork per size
+ * key, with an optional explicit `width` override (used by `md` to pin the
+ * exact 35x100 dimensions requested for the sidebar logo instead of scaling
+ * by the source artwork's natural aspect ratio).
+ * @type {Object<string, { height: number, width?: number }>}
  */
 const sizeMap = {
-  xs: { mark: 22, eqip: 'text-base', humana: 'text-[10px]', tag: 'text-[9px]', gap: 'gap-2' },
-  sm: { mark: 26, eqip: 'text-lg', humana: 'text-xs', tag: 'text-[10px]', gap: 'gap-2.5' },
-  md: { mark: 32, eqip: 'text-2xl', humana: 'text-sm', tag: 'text-[11px]', gap: 'gap-3' },
-  lg: { mark: 38, eqip: 'text-3xl', humana: 'text-base', tag: 'text-xs', gap: 'gap-3' },
-  xl: { mark: 46, eqip: 'text-4xl', humana: 'text-lg', tag: 'text-sm', gap: 'gap-3.5' },
-  '2xl': { mark: 56, eqip: 'text-5xl', humana: 'text-xl', tag: 'text-base', gap: 'gap-4' },
+  xs: { height: 36 },
+  sm: { height: 44 },
+  md: { height: 35, width: 100 },
+  lg: { height: 72 },
+  xl: { height: 88 },
+  '2xl': { height: 104 },
 };
 
-/**
- * The EQIP hexagonal cube mark — an isometric hexagon split into blue and
- * green facets. Rendered inline so it never depends on external assets.
- *
- * @param {object} props
- * @param {number} props.size - Pixel width/height of the mark
- * @returns {React.ReactElement}
- */
-function EqipMark({ size }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      {/* Top face (green) */}
-      <path d="M24 3 L43 14 L24 25 L5 14 Z" fill="#16b364" />
-      {/* Left face (mid blue) */}
-      <path d="M5 14 L24 25 L24 45 L5 34 Z" fill="#2f6fed" />
-      {/* Right face (deep blue) */}
-      <path d="M43 14 L43 34 L24 45 L24 25 Z" fill="#1b4fc4" />
-      {/* Inner highlight */}
-      <path d="M24 25 L43 14 L24 3 Z" fill="#3acd7e" fillOpacity="0.55" />
-    </svg>
-  );
-}
-
-EqipMark.propTypes = {
-  size: PropTypes.number.isRequired,
-};
+/** Natural pixel aspect ratio (width / height) of the source logo crops. */
+const WORDMARK_ASPECT = 559 / 211;
+const MONOGRAM_ASPECT = 208 / 217;
 
 /**
- * Brand logo for the EQIP Quality Platform: an inline geometric hex mark plus
- * the "EQIP" wordmark and an optional tagline. Supports light (for dark
- * backgrounds like the sidebar) and dark (for light backgrounds) variants.
+ * Brand logo for the EQIP Quality Platform. Renders the official EQIP mark
+ * artwork (or just the Q monogram when space is tight) centered, with the
+ * "Enterprise Quality Intelligence Platform" name and an optional "Humana."
+ * sub-line rendered as live white text underneath — the source PNG is
+ * cropped to the mark only (no baked-in caption) so this text stays legible
+ * on dark surfaces like the sidebar.
  *
  * @param {object} props
- * @param {'light'|'dark'} [props.variant='light'] - Color variant (light = white text for dark backgrounds)
+ * @param {'light'|'dark'} [props.variant='light'] - Color variant (light = white sub-text for dark backgrounds)
  * @param {'xs'|'sm'|'md'|'lg'|'xl'|'2xl'} [props.size='md'] - Overall size
- * @param {string} [props.tagline] - Optional tagline shown under the wordmark
- * @param {boolean} [props.showText=true] - Whether to render the wordmark next to the mark
- * @param {boolean} [props.showHumana=true] - Whether to render the "Humana." sub-wordmark under "EQIP"
+ * @param {boolean} [props.showText=true] - Whether to render the full EQIP mark + caption (false = compact Q monogram only)
+ * @param {boolean} [props.showHumana=true] - Whether to render the "Humana." sub-wordmark under the caption
+ * @param {boolean} [props.showCaption=true] - Whether to render the "Enterprise Quality Intelligence Platform" caption
  * @param {string} [props.className] - Additional class names for the container
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
 const BrandLogo = forwardRef(function BrandLogo(
-  { variant = 'light', size = 'md', tagline, showText = true, showHumana = true, className, ...props },
+  { variant = 'light', size = 'md', showText = true, showHumana = true, showCaption = true, className, ...props },
   ref
 ) {
-  const s = sizeMap[size] || sizeMap.md;
+  const { height: markHeight, width: markWidth } = sizeMap[size] || sizeMap.md;
   const isLight = variant !== 'dark';
-  const eqipColor = isLight ? 'text-white' : 'text-navy-900';
   const humanaColor = isLight ? 'text-humana-green-400' : 'text-humana-green-600';
-  const tagColor = isLight ? 'text-slate-400' : 'text-slate-500';
+  const captionColor = isLight ? 'text-white' : 'text-navy-900';
+
+  if (!showText) {
+    return (
+      <span
+        ref={ref}
+        className={cn('inline-flex items-center', className)}
+        role="img"
+        aria-label="EQIP Enterprise Quality Intelligence Platform"
+        {...props}
+      >
+        <img
+          src="/assets/eqip-monogram.png"
+          alt=""
+          aria-hidden="true"
+          className="shrink-0"
+          style={{ height: markHeight, width: markHeight * MONOGRAM_ASPECT }}
+        />
+      </span>
+    );
+  }
 
   return (
     <span
       ref={ref}
-      className={cn('inline-flex items-center', s.gap, className)}
+      className={cn('inline-flex flex-col items-start pl-4 text-left leading-none', className)}
       role="img"
-      aria-label="EQIP Humana Quality Platform"
+      aria-label="EQIP Enterprise Quality Intelligence Platform"
       {...props}
     >
-      <EqipMark size={s.mark} />
-      {showText ? (
-        <span className="flex max-w-[150px] flex-col leading-none">
-          <span className={cn('font-bold tracking-tight', s.eqip, eqipColor)}>EQIP</span>
-          {showHumana ? (
-            <span className={cn('font-semibold leading-tight tracking-tight', s.humana, humanaColor)}>
-              Humana.
-            </span>
-          ) : null}
-          {tagline ? (
-            <span className={cn('mt-1 font-medium leading-tight tracking-wide', s.tag, tagColor)}>
-              {tagline}
-            </span>
-          ) : null}
+      <img
+        src="/assets/eqip-wordmark.png"
+        alt="EQIP"
+        className="shrink-0"
+        style={{ height: markHeight, width: markWidth ?? markHeight * WORDMARK_ASPECT }}
+      />
+      {showCaption ? (
+        <span className={cn('mt-1.5 whitespace-nowrap text-[10px] font-medium leading-tight tracking-wide', captionColor)}>
+          Enterprise Quality Intelligence Platform
+        </span>
+      ) : null}
+      {showCaption ? (
+        <span className={cn('mt-0.5 whitespace-nowrap text-[8px] font-medium leading-tight tracking-wide', captionColor)}>
+          AI-Powered Insights. | Intelligent Decisions. | Better Quality Outcomes.
+        </span>
+      ) : null}
+      {showHumana ? (
+        <span className={cn('mt-1.5 text-sm font-semibold leading-tight tracking-tight', humanaColor)}>
+          Humana.
         </span>
       ) : null}
     </span>
@@ -108,9 +107,9 @@ BrandLogo.displayName = 'BrandLogo';
 BrandLogo.propTypes = {
   variant: PropTypes.oneOf(['light', 'dark']),
   size: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl']),
-  tagline: PropTypes.string,
   showText: PropTypes.bool,
   showHumana: PropTypes.bool,
+  showCaption: PropTypes.bool,
   className: PropTypes.string,
 };
 

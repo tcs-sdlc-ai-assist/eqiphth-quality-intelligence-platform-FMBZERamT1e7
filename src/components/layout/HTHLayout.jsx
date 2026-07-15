@@ -69,9 +69,9 @@ const HTHLayout = forwardRef(function HTHLayout({ className, ...props }, ref) {
           <SidebarResizeHandle width={sidebarWidth} onResize={setSidebarWidth} />
         ) : null}
 
-        {/* Brand header */}
+        {/* Brand header — logo centered at the top of the sidebar */}
         {sidebarCollapsed ? (
-          <div className="flex shrink-0 flex-col items-center gap-2 border-b border-white/10 px-2 py-3">
+          <div className="relative flex shrink-0 flex-col items-center gap-2 border-b border-white/10 px-2 py-3">
             <Link
               to="/dashboard"
               className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
@@ -93,22 +93,20 @@ const HTHLayout = forwardRef(function HTHLayout({ className, ...props }, ref) {
             />
           </div>
         ) : (
-          <div className="flex shrink-0 flex-col border-b border-white/10 px-5 py-4">
-            <div className="flex items-start justify-between gap-2">
-              <Link
-                to="/dashboard"
-                className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
-                aria-label="EQIP Quality Platform — Go to dashboard"
-              >
-                <BrandLogo variant="light" size="sm" />
-              </Link>
-              <SidebarCollapseToggle
-                collapsed={sidebarCollapsed}
-                onToggle={toggleSidebarCollapsed}
-                className="hidden shrink-0 border border-white/10 bg-white/5 lg:flex"
-              />
-            </div>
-            <div className="mt-3 border-t border-white/10 pt-3">
+          <div className="relative flex shrink-0 flex-col items-center border-b border-white/10 px-5 py-4">
+            <Link
+              to="/dashboard"
+              className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
+              aria-label="EQIP Quality Platform — Go to dashboard"
+            >
+              <BrandLogo variant="light" size="sm" showCaption={false} />
+            </Link>
+            <SidebarCollapseToggle
+              collapsed={sidebarCollapsed}
+              onToggle={toggleSidebarCollapsed}
+              className="absolute right-2 top-2 z-20 hidden border border-white/10 bg-white/5 lg:flex"
+            />
+            <div className="mt-3 w-full border-t border-white/10 pt-3 text-center">
               <Link to={ROUTES.HTH} className="text-sm font-bold leading-tight text-white hover:text-humana-green-300">
                 Humana Test Harness (HTH)
               </Link>
