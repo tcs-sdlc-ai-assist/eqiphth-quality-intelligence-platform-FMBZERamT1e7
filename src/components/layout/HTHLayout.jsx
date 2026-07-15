@@ -93,20 +93,25 @@ const HTHLayout = forwardRef(function HTHLayout({ className, ...props }, ref) {
             />
           </div>
         ) : (
-          <div className="relative flex shrink-0 flex-col items-center border-b border-white/10 px-5 py-4">
+          <div className="relative flex shrink-0 flex-col items-start border-b border-white/10 px-2 py-4">
             <Link
               to="/dashboard"
               className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
               aria-label="EQIP Quality Platform — Go to dashboard"
             >
-              <BrandLogo variant="light" size="sm" showCaption={false} />
+              <BrandLogo
+                variant="light"
+                size="md"
+                showText={!sidebarCollapsed}
+                showHumana={false}
+              />
             </Link>
             <SidebarCollapseToggle
               collapsed={sidebarCollapsed}
               onToggle={toggleSidebarCollapsed}
               className="absolute right-2 top-2 z-20 hidden border border-white/10 bg-white/5 lg:flex"
             />
-            <div className="mt-3 w-full border-t border-white/10 pt-3 text-center">
+            <div className="mt-3 w-full border-t border-white/10 pt-3 pl-4 text-left">
               <Link to={ROUTES.HTH} className="text-sm font-bold leading-tight text-white hover:text-humana-green-300">
                 Humana Test Harness (HTH)
               </Link>
