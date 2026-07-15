@@ -99,6 +99,7 @@ export const ROUTES = Object.freeze({
   USERS: '/users',
   PROFILE: '/profile',
   BOOKMARKS: '/bookmarks',
+  HELP: '/help',
   AI_AGENTS: '/ai-agents',
   KNOWLEDGE_GRAPH: '/knowledge-graph',
   EQE_LOG: '/eqe-log',

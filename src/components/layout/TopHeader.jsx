@@ -1,6 +1,7 @@
 import { forwardRef, useState, useCallback, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate, Link } from 'react-router-dom';
+import { ROUTES } from '@/lib/constants';
 import {
   Bell,
   HelpCircle,
@@ -119,6 +120,8 @@ Breadcrumbs.propTypes = {
  * @returns {React.ReactElement}
  */
 function HelpMenu({ className }) {
+  const navigate = useNavigate();
+
   return (
     <DropdownMenu>
       <Tooltip>
@@ -143,24 +146,24 @@ function HelpMenu({ className }) {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Help &amp; Resources</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(`${ROUTES.HELP}#documentation`)}>
           <BookOpen className="mr-2 h-4 w-4" aria-hidden="true" />
           Documentation
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(`${ROUTES.HELP}#shortcuts`)}>
           <Keyboard className="mr-2 h-4 w-4" aria-hidden="true" />
           Keyboard Shortcuts
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(`${ROUTES.HELP}#support`)}>
           <MessageCircle className="mr-2 h-4 w-4" aria-hidden="true" />
           Contact Support
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(`${ROUTES.HELP}#release-notes`)}>
           <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
           Release Notes
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(`${ROUTES.HELP}#about`)}>
           <Info className="mr-2 h-4 w-4" aria-hidden="true" />
           About EQIP
         </DropdownMenuItem>

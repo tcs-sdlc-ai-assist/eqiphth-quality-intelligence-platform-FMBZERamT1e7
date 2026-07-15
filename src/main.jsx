@@ -47,6 +47,7 @@ import AdminPage from '@/pages/admin/AdminPage';
 import UserRepositoryPage from '@/pages/users/UserRepositoryPage';
 import MyProfilePage from '@/pages/users/MyProfilePage';
 import BookmarksPage from '@/pages/bookmarks/BookmarksPage';
+import HelpSupportPage from '@/pages/help/HelpSupportPage';
 import AIAgentWorkforcePage from '@/pages/ai-insights/AIAgentWorkforcePage';
 import EnterpriseKnowledgeGraphPage from '@/pages/ai-insights/EnterpriseKnowledgeGraphPage';
 import EQELogPage from '@/pages/admin/EQELogPage';
@@ -107,6 +108,7 @@ function App() {
                       <Route path={ROUTES.USERS} element={<UserRepositoryPage />} />
                        <Route path={ROUTES.PROFILE} element={<MyProfilePage />} />
                       <Route path={ROUTES.BOOKMARKS} element={<BookmarksPage />} />
+                      <Route path={ROUTES.HELP} element={<HelpSupportPage />} />
                       <Route path={ROUTES.AI_AGENTS} element={<AIAgentWorkforcePage />} />
                       <Route path={ROUTES.KNOWLEDGE_GRAPH} element={<EnterpriseKnowledgeGraphPage />} />
                       <Route path={ROUTES.EQE_LOG} element={<EQELogPage />} />

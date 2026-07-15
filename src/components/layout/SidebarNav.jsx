@@ -157,7 +157,7 @@ const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) 
   return (
     <nav
       ref={ref}
-      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-5 scrollbar-hide', className)}
+      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-5 scrollbar-dark', className)}
       role="navigation"
       aria-label="Main navigation"
       {...props}

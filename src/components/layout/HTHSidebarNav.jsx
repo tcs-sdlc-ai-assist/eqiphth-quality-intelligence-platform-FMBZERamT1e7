@@ -18,6 +18,7 @@ import {
   Star,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   LifeBuoy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -118,11 +119,21 @@ const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, ...props },
   return (
     <nav
       ref={ref}
-      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-hide', className)}
+      className={cn('flex flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-dark', className)}
       role="navigation"
       aria-label="Humana Test Harness navigation"
       {...props}
     >
+      <button
+        type="button"
+        onClick={() => handleNavigate(ROUTES.DASHBOARD)}
+        className="mb-1 flex w-full items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+      >
+        <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+        Back to EQIP
+      </button>
+      <div className="mb-1 border-t border-white/10" aria-hidden="true" />
+
       <NavRow label="HTH Home" to={ROUTES.HTH} icon={Home} active={isActive(ROUTES.HTH)} onNavigate={handleNavigate} />
 
       <div className="mt-3 px-4 text-2xs font-semibold uppercase tracking-wider text-slate-500">Analytics</div>
@@ -168,9 +179,8 @@ const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, ...props },
 
       <div className="mt-auto pt-3">
         <Link
-          to="#"
-          onClick={(e) => e.preventDefault()}
-          className="flex items-center gap-2.5 rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:text-slate-100"
+          to={`${ROUTES.HELP}#documentation`}
+          className="flex items-center gap-2.5 rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
         >
           <LifeBuoy className="h-4 w-4 shrink-0" aria-hidden="true" />
           HTH Docs &amp; Support
