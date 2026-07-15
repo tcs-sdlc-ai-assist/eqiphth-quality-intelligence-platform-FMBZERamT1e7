@@ -93,10 +93,10 @@ export function EnterpriseKnowledgeGraphPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Graph Nodes" value="1,482 Nodes" trend="stable" changePercent="Applications, APIs, Test Cases" status="info" />
-        <KpiCard label="Graph Edges" value="4,832 Edges" trend="up" changePercent="Coverage & Dependencies" status="success" />
-        <KpiCard label="Knowledge Depth" value="94.8%" trend="up" changePercent="Traceability coverage" status="success" />
-        <KpiCard label="AI Grounding Rate" value="99.2%" trend="stable" changePercent="Context accuracy" status="info" />
+        <KpiCard label="Graph Nodes" value="1,482 Nodes" trend="stable" description="Applications, APIs, Test Cases" status="completed" />
+        <KpiCard label="Graph Edges" value="4,832 Edges" trend="improving" description="Coverage & Dependencies" status="on_track" />
+        <KpiCard label="Knowledge Depth" value="94.8%" trend="improving" description="Traceability coverage" status="on_track" />
+        <KpiCard label="AI Grounding Rate" value="99.2%" trend="stable" description="Context accuracy" status="completed" />
       </div>
 
       {/* Ask EQIP Search Box */}

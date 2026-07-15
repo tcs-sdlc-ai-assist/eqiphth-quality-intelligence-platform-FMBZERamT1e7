@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
+import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { Badge } from '@/components/ui/Badge';
@@ -134,7 +135,17 @@ function FilterSelect({ label, options }) {
  */
 function HTHHomePage() {
   const { setBreadcrumbs } = useNavigation();
+  const { toast } = useToast();
   const [logTab, setLogTab] = useState('All');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      toast({ variant: 'success', title: 'Data refreshed', description: 'HTH Home metrics recalculated from the latest mock executions.' });
+    }, 400);
+  };
 
   useEffect(() => {
     setBreadcrumbs([
@@ -162,8 +173,8 @@ function HTHHomePage() {
       {/* Filter row */}
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
         {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
-        <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
-          <RefreshCw className="h-4 w-4 text-slate-400" aria-hidden="true" /> Refresh
+        <button type="button" onClick={handleRefresh} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <RefreshCw className={cn('h-4 w-4 text-slate-400', refreshing && 'animate-spin')} aria-hidden="true" /> Refresh
         </button>
       </div>
 

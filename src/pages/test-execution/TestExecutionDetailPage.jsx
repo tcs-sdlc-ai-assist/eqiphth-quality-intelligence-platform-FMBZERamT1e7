@@ -14,7 +14,6 @@ import {
   Star,
   RefreshCw,
   Columns3,
-  Filter,
   Rows3,
   Download,
   Search,
@@ -28,9 +27,27 @@ import {
 import { cn, downloadCSV } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/DropdownMenu';
 import { ROUTES } from '@/lib/constants';
 
 /* Mock data mirrors Docs/mocks/07-test-execution-detail.png (frontend-only). */
+
+const RESULT_COLS = [
+  { key: 'history', label: 'History' },
+  { key: 'report', label: 'Report' },
+  { key: 'status', label: 'Test Status' },
+  { key: 'analysis', label: 'Analysis' },
+  { key: 'key', label: 'Test Key' },
+  { key: 'summary', label: 'Test Summary' },
+  { key: 'error', label: 'Error Description' },
+];
 
 const BUILDS = [
   { build: '231', passed: 420, failed: 60, other: 20 }, { build: '233', passed: 410, failed: 70, other: 18 },
@@ -106,6 +123,9 @@ function TestExecutionDetailPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [starred, setStarred] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hiddenCols, setHiddenCols] = useState(() => new Set());
+  const [density, setDensity] = useState('comfortable');
 
   useEffect(() => {
     setBreadcrumbs([
@@ -129,6 +149,26 @@ function TestExecutionDetailPage() {
     toast({ variant: 'success', title: 'Export complete', description: `${rows.length} results exported to CSV.` });
   };
 
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      toast({ variant: 'success', title: 'Data refreshed', description: 'Execution results reloaded from the latest mock run.' });
+    }, 400);
+  };
+
+  const toggleCol = (key) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const isColVisible = (key) => !hiddenCols.has(key);
+  const cellPad = density === 'compact' ? 'py-1' : 'py-3';
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -141,7 +181,7 @@ function TestExecutionDetailPage() {
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
         <div className="flex flex-wrap items-end gap-3">
           {FILTERS_1.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
-          <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"><RefreshCw className="h-4 w-4 text-slate-400" /> Refresh</button>
+          <button type="button" onClick={handleRefresh} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"><RefreshCw className={cn('h-4 w-4 text-slate-400', refreshing && 'animate-spin')} /> Refresh</button>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           {FILTERS_2.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
@@ -186,16 +226,38 @@ function TestExecutionDetailPage() {
         <div className="rounded-lg border border-slate-200 px-3 py-1.5"><span className="text-slate-500">Testing Type:</span> <span className="font-medium text-slate-800">Regression</span></div>
         <div className="w-full flex items-center gap-3 border-t border-slate-100 pt-3">
           <span><span className="text-slate-500">Execution Date:</span> <span className="font-medium text-slate-800">2026-04-10T12:53:00.223</span></span>
-          <button type="button" className="inline-flex items-center gap-1 text-sm font-medium text-info-600 hover:text-info-700"><FileText className="h-4 w-4" /> Build Summary Report</button>
+          <button type="button" onClick={() => toast({ variant: 'info', title: 'Build Summary Report', description: 'Would open the full Jenkins build report in production.' })} className="inline-flex items-center gap-1 text-sm font-medium text-info-600 hover:text-info-700"><FileText className="h-4 w-4" /> Build Summary Report</button>
         </div>
       </div>
 
       {/* Result grid */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
-          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Filter className="h-3.5 w-3.5" /> Filters</button>
-          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {RESULT_COLS.map((c) => (
+                <DropdownMenuCheckboxItem key={c.key} checked={!hiddenCols.has(c.key)} onCheckedChange={() => toggleCol(c.key)}>
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuLabel>Row density</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem checked={density === 'comfortable'} onCheckedChange={() => setDensity('comfortable')}>Comfortable</DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={density === 'compact'} onCheckedChange={() => setDensity('compact')}>Compact</DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Download className="h-3.5 w-3.5" /> Export</button>
           <span className="relative ml-auto">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -206,29 +268,31 @@ function TestExecutionDetailPage() {
           <table className="w-full min-w-[840px] text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-2xs uppercase tracking-wider text-slate-500">
-                <th className="px-3 py-2 font-medium">History</th>
-                <th className="px-3 py-2 font-medium">Report</th>
-                <th className="px-3 py-2 font-medium">Test Status</th>
-                <th className="px-3 py-2 font-medium">Analysis</th>
-                <th className="px-3 py-2 font-medium">Test Key</th>
-                <th className="px-3 py-2 font-medium">Test Summary</th>
-                <th className="px-3 py-2 font-medium">Error Description</th>
+                {isColVisible('history') ? <th className="px-3 py-2 font-medium">History</th> : null}
+                {isColVisible('report') ? <th className="px-3 py-2 font-medium">Report</th> : null}
+                {isColVisible('status') ? <th className="px-3 py-2 font-medium">Test Status</th> : null}
+                {isColVisible('analysis') ? <th className="px-3 py-2 font-medium">Analysis</th> : null}
+                {isColVisible('key') ? <th className="px-3 py-2 font-medium">Test Key</th> : null}
+                {isColVisible('summary') ? <th className="px-3 py-2 font-medium">Test Summary</th> : null}
+                {isColVisible('error') ? <th className="px-3 py-2 font-medium">Error Description</th> : null}
               </tr>
             </thead>
             <tbody>
               {pageRows.map((r) => (
                 <tr key={r.keys[0]} className="border-b border-slate-100 align-top hover:bg-slate-50/60">
-                  <td className="px-3 py-3 text-slate-400"><History className="h-4 w-4" /></td>
-                  <td className="px-3 py-3 text-slate-400"><ExternalLink className="h-4 w-4" /></td>
-                  <td className="px-3 py-3"><span className="inline-flex items-center gap-1 font-medium text-danger-600"><XCircle className="h-4 w-4" /> ERROR</span></td>
-                  <td className="px-3 py-3 text-slate-500">Not Started</td>
-                  <td className="px-3 py-3">
-                    <div className="flex flex-col gap-0.5">
-                      {r.keys.map((k) => <span key={k} className="font-medium text-info-600 hover:underline cursor-pointer">{k}</span>)}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-slate-600">{r.summary}</td>
-                  <td className="px-3 py-3 text-slate-500">{r.error}</td>
+                  {isColVisible('history') ? <td className={cn('px-3 text-slate-400', cellPad)}><History className="h-4 w-4" /></td> : null}
+                  {isColVisible('report') ? <td className={cn('px-3 text-slate-400', cellPad)}><ExternalLink className="h-4 w-4" /></td> : null}
+                  {isColVisible('status') ? <td className={cn('px-3', cellPad)}><span className="inline-flex items-center gap-1 font-medium text-danger-600"><XCircle className="h-4 w-4" /> ERROR</span></td> : null}
+                  {isColVisible('analysis') ? <td className={cn('px-3 text-slate-500', cellPad)}>Not Started</td> : null}
+                  {isColVisible('key') ? (
+                    <td className={cn('px-3', cellPad)}>
+                      <div className="flex flex-col gap-0.5">
+                        {r.keys.map((k) => <span key={k} className="font-medium text-info-600 hover:underline cursor-pointer">{k}</span>)}
+                      </div>
+                    </td>
+                  ) : null}
+                  {isColVisible('summary') ? <td className={cn('px-3 text-slate-600', cellPad)}>{r.summary}</td> : null}
+                  {isColVisible('error') ? <td className={cn('px-3 text-slate-500', cellPad)}>{r.error}</td> : null}
                 </tr>
               ))}
             </tbody>

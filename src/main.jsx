@@ -10,13 +10,22 @@ import { TooltipProvider } from '@/components/ui/Tooltip';
 import { ToastContextProvider } from '@/components/ui/Toast';
 
 import AppLayout from '@/components/layout/AppLayout';
+import HTHLayout from '@/components/layout/HTHLayout';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import SegmentManagementPage from '@/pages/segments/SegmentManagementPage';
 import DemandManagementPage from '@/pages/demand/DemandManagementPage';
 import ApplicationMasterPage from '@/pages/applications/ApplicationMasterPage';
 import HTHHomePage from '@/pages/hth/HTHHomePage';
 import InSprintViewPage from '@/pages/hth/InSprintViewPage';
+import ApplicationViewPage from '@/pages/hth/ApplicationViewPage';
+import TriagePage from '@/pages/hth/TriagePage';
+import ExecutionsTriagePage from '@/pages/hth/ExecutionsTriagePage';
+import MyAssignmentsPage from '@/pages/hth/MyAssignmentsPage';
+import AIInTestingPage from '@/pages/hth/AIInTestingPage';
+import UnitTestsPage from '@/pages/hth/UnitTestsPage';
+import ConfigurationsPage from '@/pages/hth/ConfigurationsPage';
 import ReleaseReadinessPage from '@/pages/quality-gates/ReleaseReadinessPage';
+import BugsDefectsOverviewPage from '@/pages/bugs-defects/BugsDefectsOverviewPage';
 import ReleaseDetailPage from '@/pages/quality-gates/ReleaseDetailPage';
 import TestCasesInventoryPage from '@/pages/test-cases/TestCasesInventoryPage';
 import TestSuiteDetailPage from '@/pages/test-cases/TestSuiteDetailPage';
@@ -37,6 +46,7 @@ import IntegrationManagementPage from '@/pages/integrations/IntegrationManagemen
 import AdminPage from '@/pages/admin/AdminPage';
 import UserRepositoryPage from '@/pages/users/UserRepositoryPage';
 import MyProfilePage from '@/pages/users/MyProfilePage';
+import BookmarksPage from '@/pages/bookmarks/BookmarksPage';
 import AIAgentWorkforcePage from '@/pages/ai-insights/AIAgentWorkforcePage';
 import EnterpriseKnowledgeGraphPage from '@/pages/ai-insights/EnterpriseKnowledgeGraphPage';
 import EQELogPage from '@/pages/admin/EQELogPage';
@@ -83,16 +93,6 @@ function App() {
                       <Route path={ROUTES.DEMAND} element={<DemandManagementPage />} />
                       <Route path={ROUTES.APPLICATIONS} element={<ApplicationMasterPage />} />
                       <Route path={ROUTES.APPLICATION_DETAIL} element={<ApplicationMasterPage />} />
-                      <Route path={ROUTES.HTH} element={<HTHHomePage />} />
-                      <Route path={ROUTES.HTH_IN_SPRINT} element={<InSprintViewPage />} />
-                      <Route path={ROUTES.RELEASE_READINESS} element={<ReleaseReadinessPage />} />
-                      <Route path={ROUTES.RELEASE_DETAIL} element={<ReleaseDetailPage />} />
-                      <Route path={ROUTES.TEST_CASES} element={<TestCasesInventoryPage />} />
-                      <Route path={ROUTES.TEST_SUITE_DETAIL} element={<TestSuiteDetailPage />} />
-                      <Route path={ROUTES.EXECUTIONS} element={<TestExecutionDashboardPage />} />
-                      <Route path={ROUTES.EXECUTION_DETAIL} element={<TestExecutionDetailPage />} />
-                      <Route path={ROUTES.SCHEDULER} element={<SchedulerPage />} />
-                      <Route path={ROUTES.AUTOMATION} element={<AutomationIntelligencePage />} />
                       <Route path={ROUTES.ENVIRONMENTS} element={<EnvironmentManagementPage />} />
                       <Route path={ROUTES.TEST_DATA} element={<TestDataManagementPage />} />
                       <Route path={ROUTES.QUALITY_GATES} element={<QualityGatesPage />} />
@@ -106,16 +106,41 @@ function App() {
                       <Route path={ROUTES.ADMIN} element={<AdminPage />} />
                       <Route path={ROUTES.USERS} element={<UserRepositoryPage />} />
                        <Route path={ROUTES.PROFILE} element={<MyProfilePage />} />
+                      <Route path={ROUTES.BOOKMARKS} element={<BookmarksPage />} />
                       <Route path={ROUTES.AI_AGENTS} element={<AIAgentWorkforcePage />} />
                       <Route path={ROUTES.KNOWLEDGE_GRAPH} element={<EnterpriseKnowledgeGraphPage />} />
                       <Route path={ROUTES.EQE_LOG} element={<EQELogPage />} />
                       {/* Legacy path redirects */}
-                      <Route path="/measures" element={<Navigate to={ROUTES.HTH} replace />} />
                       <Route path="/patients" element={<Navigate to={ROUTES.TEST_DATA} replace />} />
                       <Route path="/analytics" element={<Navigate to={ROUTES.AI_INSIGHTS} replace />} />
                       <Route path="/settings" element={<Navigate to={ROUTES.ADMIN} replace />} />
-                      <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
                     </Route>
+
+                    {/* Humana Test Harness module — its own nested sidebar (PRD §5, §6.4.1) */}
+                    <Route path="/" element={<RequireAuth><HTHLayout /></RequireAuth>}>
+                      <Route path={ROUTES.HTH} element={<HTHHomePage />} />
+                      <Route path={ROUTES.HTH_IN_SPRINT} element={<InSprintViewPage />} />
+                      <Route path={ROUTES.APPLICATION_VIEW} element={<ApplicationViewPage />} />
+                      <Route path={ROUTES.TRIAGE} element={<TriagePage />} />
+                      <Route path={ROUTES.EXECUTIONS_TRIAGE} element={<ExecutionsTriagePage />} />
+                      <Route path={ROUTES.MY_ASSIGNMENTS} element={<MyAssignmentsPage />} />
+                      <Route path={ROUTES.AI_IN_TESTING} element={<AIInTestingPage />} />
+                      <Route path={ROUTES.TEST_CASES} element={<TestCasesInventoryPage />} />
+                      <Route path={ROUTES.TEST_SUITE_DETAIL} element={<TestSuiteDetailPage />} />
+                      <Route path={ROUTES.BUGS_DEFECTS} element={<BugsDefectsOverviewPage />} />
+                      <Route path={ROUTES.EXECUTIONS} element={<TestExecutionDashboardPage />} />
+                      <Route path={ROUTES.EXECUTION_DETAIL} element={<TestExecutionDetailPage />} />
+                      <Route path={ROUTES.UNIT_TESTS} element={<UnitTestsPage />} />
+                      <Route path={ROUTES.RELEASE_READINESS} element={<ReleaseReadinessPage />} />
+                      <Route path={ROUTES.RELEASE_DETAIL} element={<ReleaseDetailPage />} />
+                      <Route path={ROUTES.CONFIGURATIONS} element={<ConfigurationsPage />} />
+                      <Route path={ROUTES.SCHEDULER} element={<SchedulerPage />} />
+                      <Route path={ROUTES.AUTOMATION} element={<AutomationIntelligencePage />} />
+                      {/* Legacy path redirect */}
+                      <Route path="/measures" element={<Navigate to={ROUTES.HTH} replace />} />
+                    </Route>
+
+                    <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
                   </Routes>
                 </ToastContextProvider>
               </TooltipProvider>

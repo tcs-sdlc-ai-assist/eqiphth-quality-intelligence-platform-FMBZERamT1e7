@@ -1,106 +1,138 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  TrendingUp,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
   RefreshCw,
-  Plus,
-  ArrowRight,
-  ShieldAlert,
-  Clock,
-  ThumbsUp,
-  FileCheck,
+  Eye,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Circle,
 } from 'lucide-react';
-import { usePersona } from '@/context/PersonaContext';
 import { useNavigation } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
-import { PanelCard } from '@/components/shared/PanelCard';
-import { StatusPill } from '@/components/shared/StatusPill';
-import { Button } from '@/components/ui/Button';
-import { Progress } from '@/components/ui/Progress';
+import { DataTable } from '@/components/shared/DataTable';
+import { FilterBar } from '@/components/shared/FilterBar';
+import { RingGauge } from '@/components/shared/RingGauge';
 import { Badge } from '@/components/ui/Badge';
-import { ROUTES } from '@/lib/constants';
+import { Button } from '@/components/ui/Button';
+import { formatDate } from '@/lib/utils';
+import { ROUTES, DATE_FORMATS } from '@/lib/constants';
 
+// ---------------------------------------------------------------------------
+// Mock data — release events with QA/security/coverage readiness signals.
+// Three rows keep the ids used by ReleaseDetailPage (rel-980/981/982) so the
+// "view" row action still opens a fully-populated detail page.
+// ---------------------------------------------------------------------------
 const MOCK_RELEASES = [
-  {
-    id: 'rel-980',
-    name: 'Medicare Enrollment Portal R4',
-    application: 'Medicare Portal',
-    segment: 'Medicare',
-    releaseDate: '2026-07-28',
-    owner: 'Sarah Chen',
-    qeOwner: 'Angela Martinez',
-    overallScore: 89,
-    businessScore: 95,
-    technicalScore: 85,
-    qualityScore: 92,
-    operationalScore: 84,
-    confidence: 90,
-    risk: 'medium',
-    gateStatus: 'passed',
-    criticalDefects: 0,
-    openDefects: 3,
-    testCompletion: 98,
-    automationExecution: 85,
-    recommendation: 'Ready with Risk',
-  },
-  {
-    id: 'rel-981',
-    name: 'Claims Processor API v2.1',
-    application: 'Claims Core',
-    segment: 'Enterprise',
-    releaseDate: '2026-08-05',
-    owner: 'Robert Kim',
-    qeOwner: 'Lisa Johnson',
-    overallScore: 68,
-    businessScore: 75,
-    technicalScore: 60,
-    qualityScore: 64,
-    operationalScore: 73,
-    confidence: 65,
-    risk: 'high',
-    gateStatus: 'failed',
-    criticalDefects: 2,
-    openDefects: 14,
-    testCompletion: 82,
-    automationExecution: 72,
-    recommendation: 'Not Ready',
-  },
-  {
-    id: 'rel-982',
-    name: 'Provider Finder Mobile v1.8',
-    application: 'Provider Directory',
-    segment: 'Commercial',
-    releaseDate: '2026-07-20',
-    owner: 'Amanda Garcia',
-    qeOwner: 'Priya Patel',
-    overallScore: 96,
-    businessScore: 98,
-    technicalScore: 94,
-    qualityScore: 96,
-    operationalScore: 96,
-    confidence: 98,
-    risk: 'low',
-    gateStatus: 'passed',
-    criticalDefects: 0,
-    openDefects: 1,
-    testCompletion: 100,
-    automationExecution: 95,
-    recommendation: 'Ready',
-  },
+  { id: 'rel-1001', crq: 'CRQ000001689980', eventCode: 'MP-REL-2026-04-23-01', eventName: 'Member Portal Release', applications: ['Member Portal'], startDate: '2026-04-23', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 17, total: 24, blocked: 2 }, qaAutomation: { automated: 34, total: 40, failed: 4 }, defects: { open: 10, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 65, newCode: 58 } },
+  { id: 'rel-1002', crq: 'CRQ000001691241', eventCode: 'BILL-REL-2026-04-18-01', eventName: 'Billing Applications Release', applications: ['Billing Applications'], startDate: '2026-04-18', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 45, total: 50, blocked: 0 }, qaAutomation: { automated: 57, total: 60, failed: 1 }, defects: { open: 4, closed: 6 }, security: { state: 'passed', tools: ['SonarQube', 'Qualys'] }, coverage: { overall: 78, newCode: 72 } },
+  { id: 'rel-1003', crq: 'CRQ000001691242', eventCode: 'BILL-REL-2026-04-18-02', eventName: 'Billing Applications Release', applications: ['Billing Applications'], startDate: '2026-04-18', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 30, total: 50, blocked: 5 }, qaAutomation: { automated: 48, total: 60, failed: 6 }, defects: { open: 7, closed: 3 }, security: { state: 'partial', criticalCount: 1 }, coverage: { overall: 62, newCode: 55 } },
+  { id: 'rel-1004', crq: 'CRQ000001691623', eventCode: 'PROV-REL-2026-04-19-01', eventName: 'Provider Portal Release', applications: ['Provider Portal'], startDate: '2026-04-19', status: 'scheduled', hasReleaseEvent: true, qaManual: { executed: 0, total: 30, blocked: 0 }, qaAutomation: { automated: 0, total: 30, failed: 0 }, defects: { open: 0, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 0, newCode: 0 } },
+  { id: 'rel-1005', crq: 'CRQ000001691624', eventCode: 'ENR-REL-2026-04-20-01', eventName: 'Enrollment System Release', applications: ['Enrollment System'], startDate: '2026-04-20', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 15, total: 30, blocked: 1 }, qaAutomation: { automated: 21, total: 30, failed: 3 }, defects: { open: 5, closed: 2 }, security: { state: 'partial', criticalCount: 2 }, coverage: { overall: 71, newCode: 64 } },
+  { id: 'rel-980', crq: 'CRQ000001692010', eventCode: 'MCR-REL-2026-04-24-01', eventName: 'Medicare Enrollment Portal R4', applications: ['Medicare Portal'], startDate: '2026-04-24', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 38, total: 40, blocked: 0 }, qaAutomation: { automated: 36, total: 40, failed: 0 }, defects: { open: 3, closed: 12 }, security: { state: 'passed', tools: ['SonarQube', 'Checkmarx'] }, coverage: { overall: 88, newCode: 85 } },
+  { id: 'rel-981', crq: 'CRQ000001692011', eventCode: 'CLM-REL-2026-04-25-01', eventName: 'Claims Processor API v2.1', applications: ['Claims Core'], startDate: '2026-04-25', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 28, total: 45, blocked: 6 }, qaAutomation: { automated: 32, total: 50, failed: 10 }, defects: { open: 14, closed: 1 }, security: { state: 'partial', criticalCount: 2 }, coverage: { overall: 71, newCode: 60 } },
+  { id: 'rel-982', crq: 'CRQ000001692012', eventCode: 'PVD-REL-2026-04-22-01', eventName: 'Provider Finder Mobile v1.8', applications: ['Provider Directory'], startDate: '2026-04-22', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 40, total: 40, blocked: 0 }, qaAutomation: { automated: 38, total: 38, failed: 0 }, defects: { open: 1, closed: 9 }, security: { state: 'passed', tools: ['SonarQube', 'Qualys'] }, coverage: { overall: 94, newCode: 90 } },
+  { id: 'rel-1006', crq: 'CRQ000001692013', eventCode: 'PHM-REL-2026-04-26-01', eventName: 'Pharmacy Portal Release', applications: ['Pharmacy Portal'], startDate: '2026-04-26', status: 'scheduled', hasReleaseEvent: false, qaManual: { executed: 0, total: 20, blocked: 0 }, qaAutomation: { automated: 0, total: 20, failed: 0 }, defects: { open: 0, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 0, newCode: 0 } },
+  { id: 'rel-1007', crq: 'CRQ000001692014', eventCode: 'CLN-REL-2026-04-27-01', eventName: 'Clinical Platform Release', applications: ['Clinical Platform'], startDate: '2026-04-27', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 12, total: 25, blocked: 2 }, qaAutomation: { automated: 15, total: 25, failed: 4 }, defects: { open: 6, closed: 2 }, security: { state: 'partial', criticalCount: 1 }, coverage: { overall: 58, newCode: 50 } },
+  { id: 'rel-1008', crq: 'CRQ000001692015', eventCode: 'CARE-REL-2026-04-28-01', eventName: 'Care Coordination Release', applications: ['Care Coordination'], startDate: '2026-04-28', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 9, total: 15, blocked: 0 }, qaAutomation: { automated: 10, total: 15, failed: 1 }, defects: { open: 2, closed: 3 }, security: { state: 'passed', tools: ['SonarQube'] }, coverage: { overall: 80, newCode: 76 } },
+  { id: 'rel-1009', crq: 'CRQ000001692016', eventCode: 'COMM-REL-2026-04-29-01', eventName: 'Communication Hub Release', applications: ['Communication Hub'], startDate: '2026-04-29', status: 'scheduled', hasReleaseEvent: false, qaManual: { executed: 0, total: 10, blocked: 0 }, qaAutomation: { automated: 0, total: 10, failed: 0 }, defects: { open: 0, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 0, newCode: 0 } },
+  { id: 'rel-1010', crq: 'CRQ000001692017', eventCode: 'AUTH-REL-2026-04-30-01', eventName: 'Authentication Service Release', applications: ['Authentication Service'], startDate: '2026-04-30', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 33, total: 35, blocked: 0 }, qaAutomation: { automated: 40, total: 40, failed: 0 }, defects: { open: 0, closed: 5 }, security: { state: 'passed', tools: ['SonarQube', 'Qualys', 'Checkmarx'] }, coverage: { overall: 91, newCode: 89 } },
+  { id: 'rel-1011', crq: 'CRQ000001692018', eventCode: 'NOTIF-REL-2026-05-01-01', eventName: 'Notification Hub Release', applications: ['Notification Hub'], startDate: '2026-05-01', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 10, total: 20, blocked: 3 }, qaAutomation: { automated: 14, total: 20, failed: 5 }, defects: { open: 8, closed: 1 }, security: { state: 'partial', criticalCount: 3 }, coverage: { overall: 49, newCode: 40 } },
+  { id: 'rel-1012', crq: 'CRQ000001692019', eventCode: 'STAR-REL-2026-05-02-01', eventName: 'Star Ratings Analytics Release', applications: ['Star Ratings Analytics'], startDate: '2026-05-02', status: 'scheduled', hasReleaseEvent: false, qaManual: { executed: 0, total: 12, blocked: 0 }, qaAutomation: { automated: 0, total: 12, failed: 0 }, defects: { open: 0, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 0, newCode: 0 } },
+  { id: 'rel-1013', crq: 'CRQ000001692020', eventCode: 'HEDIS-REL-2026-05-03-01', eventName: 'HEDIS Measure Engine Release', applications: ['HEDIS Measure Engine'], startDate: '2026-05-03', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 18, total: 22, blocked: 1 }, qaAutomation: { automated: 20, total: 22, failed: 2 }, defects: { open: 3, closed: 4 }, security: { state: 'passed', tools: ['SonarQube'] }, coverage: { overall: 74, newCode: 70 } },
+  { id: 'rel-1014', crq: 'CRQ000001692021', eventCode: 'PARTD-REL-2026-05-04-01', eventName: 'Part D Formulary Manager Release', applications: ['Part D Formulary Manager'], startDate: '2026-05-04', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 8, total: 18, blocked: 2 }, qaAutomation: { automated: 9, total: 18, failed: 4 }, defects: { open: 5, closed: 0 }, security: { state: 'partial', criticalCount: 1 }, coverage: { overall: 55, newCode: 48 } },
+  { id: 'rel-1015', crq: 'CRQ000001692022', eventCode: 'MCD-REL-2026-05-05-01', eventName: 'Medicaid Eligibility Engine Release', applications: ['Medicaid Eligibility Engine'], startDate: '2026-05-05', status: 'scheduled', hasReleaseEvent: false, qaManual: { executed: 0, total: 16, blocked: 0 }, qaAutomation: { automated: 0, total: 16, failed: 0 }, defects: { open: 0, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 0, newCode: 0 } },
+  { id: 'rel-1016', crq: 'CRQ000001692023', eventCode: 'SREG-REL-2026-05-06-01', eventName: 'State Regulatory Reporting Release', applications: ['State Regulatory Reporting'], startDate: '2026-05-06', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 14, total: 14, blocked: 0 }, qaAutomation: { automated: 14, total: 14, failed: 0 }, defects: { open: 0, closed: 6 }, security: { state: 'passed', tools: ['SonarQube', 'Qualys'] }, coverage: { overall: 85, newCode: 80 } },
+  { id: 'rel-1017', crq: 'CRQ000001692024', eventCode: 'PNM-REL-2026-05-07-01', eventName: 'Provider Network Management Release', applications: ['Provider Network Management'], startDate: '2026-05-07', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 6, total: 12, blocked: 1 }, qaAutomation: { automated: 7, total: 12, failed: 2 }, defects: { open: 3, closed: 1 }, security: { state: 'partial', criticalCount: 1 }, coverage: { overall: 60, newCode: 52 } },
+  { id: 'rel-1018', crq: 'CRQ000001692025', eventCode: 'GRP-REL-2026-05-08-01', eventName: 'Group Enrollment Platform Release', applications: ['Group Enrollment Platform'], startDate: '2026-05-08', status: 'scheduled', hasReleaseEvent: false, qaManual: { executed: 0, total: 10, blocked: 0 }, qaAutomation: { automated: 0, total: 10, failed: 0 }, defects: { open: 0, closed: 0 }, security: { state: 'not_completed' }, coverage: { overall: 0, newCode: 0 } },
+  { id: 'rel-1019', crq: 'CRQ000001692026', eventCode: 'IND-REL-2026-05-09-01', eventName: 'Individual Marketplace Release', applications: ['Individual Marketplace'], startDate: '2026-05-09', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 9, total: 9, blocked: 0 }, qaAutomation: { automated: 9, total: 9, failed: 0 }, defects: { open: 0, closed: 3 }, security: { state: 'passed', tools: ['SonarQube'] }, coverage: { overall: 77, newCode: 72 } },
+  { id: 'rel-1020', crq: 'CRQ000001692027', eventCode: 'BRK-REL-2026-05-10-01', eventName: 'Broker Portal Release', applications: ['Broker Portal'], startDate: '2026-05-10', status: 'scheduled_for_review', hasReleaseEvent: true, qaManual: { executed: 5, total: 10, blocked: 2 }, qaAutomation: { automated: 6, total: 10, failed: 3 }, defects: { open: 4, closed: 0 }, security: { state: 'partial', criticalCount: 2 }, coverage: { overall: 45, newCode: 38 } },
+  { id: 'rel-1021', crq: 'CRQ000001692028', eventCode: 'UND-REL-2026-05-11-01', eventName: 'Underwriting Engine Release', applications: ['Underwriting Engine'], startDate: '2026-05-11', status: 'implementation_in_progress', hasReleaseEvent: true, qaManual: { executed: 20, total: 20, blocked: 0 }, qaAutomation: { automated: 20, total: 20, failed: 0 }, defects: { open: 0, closed: 8 }, security: { state: 'passed', tools: ['SonarQube', 'Qualys'] }, coverage: { overall: 90, newCode: 86 } },
 ];
 
-export function ReleaseReadinessPage() {
-  const { currentPersona } = usePersona();
+const STATUS_META = {
+  scheduled_for_review: { label: 'Scheduled for Review', variant: 'warning' },
+  implementation_in_progress: { label: 'Implementation In Progress', variant: 'info' },
+  scheduled: { label: 'Scheduled', variant: 'neutral' },
+};
+
+const STATUS_OPTIONS = [
+  { value: '', label: 'All' },
+  ...Object.entries(STATUS_META).map(([value, meta]) => ({ value, label: meta.label })),
+];
+
+const YES_NO_OPTIONS = [
+  { value: '', label: 'All' },
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+];
+
+const APPLICATION_OPTIONS = [
+  { value: '', label: 'All Applications' },
+  ...Array.from(new Set(MOCK_RELEASES.flatMap((r) => r.applications))).map((name) => ({ value: name, label: name })),
+];
+
+const LEGEND = [
+  { label: 'On Track', description: 'All quality gates met', icon: <CheckCircle2 className="h-4 w-4 text-success-500" /> },
+  { label: 'At Risk', description: 'Some quality gates not met', icon: <AlertTriangle className="h-4 w-4 text-warning-500" /> },
+  { label: 'Not Ready', description: 'Multiple quality gates not met', icon: <XCircle className="h-4 w-4 text-danger-500" /> },
+  { label: 'Not Applicable', description: 'Quality gate not applicable', icon: <Circle className="h-4 w-4 text-slate-300" /> },
+];
+
+/**
+ * Renders the Security Scan cell — passed tool checklist, partial warning
+ * with a critical/high count, or a "Not Completed" empty state.
+ *
+ * @param {{ state: 'passed'|'partial'|'not_completed', tools?: string[], criticalCount?: number }} security - Security scan data
+ * @returns {React.ReactElement}
+ */
+function SecurityScanCell({ security }) {
+  if (security.state === 'passed') {
+    return (
+      <div className="flex flex-col gap-0.5">
+        {(security.tools || []).map((tool) => (
+          <span key={tool} className="flex items-center gap-1 text-2xs text-success-700">
+            <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" /> {tool}
+          </span>
+        ))}
+        <span className="text-2xs font-medium text-success-600">Passed</span>
+      </div>
+    );
+  }
+
+  if (security.state === 'partial') {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="flex items-center gap-1 text-xs font-medium text-warning-700">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> Partial
+        </span>
+        <span className="text-2xs text-danger-600">{security.criticalCount} Critical</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1 text-xs text-slate-400">
+      <XCircle className="h-3.5 w-3.5 shrink-0 text-danger-400" aria-hidden="true" /> Not Completed
+    </div>
+  );
+}
+
+/**
+ * Release Readiness page — CRQ/release-event table with QA manual and
+ * automation testing rings, defect counts, security scan status, and unit
+ * test coverage. Mock data only, mirrors the provided design reference.
+ *
+ * @returns {React.ReactElement}
+ */
+function ReleaseReadinessPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-  const [releases, setReleases] = useState(MOCK_RELEASES);
+  const [filters, setFilters] = useState({ application: '', itsmStatus: '', qaManual: '', securityScan: '' });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -113,11 +145,7 @@ export function ReleaseReadinessPage() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      toast({
-        title: 'Release Data Refreshed',
-        description: 'Readiness scores recalculated based on latest CI/CD pipelines.',
-        variant: 'success',
-      });
+      toast({ title: 'Release Data Refreshed', description: 'Readiness scores recalculated based on latest CI/CD pipelines.', variant: 'success' });
     }, 400);
   };
 
@@ -125,20 +153,185 @@ export function ReleaseReadinessPage() {
     navigate(`/releases/${releaseId}`);
   };
 
-  const getRecommendationColor = (rec) => {
-    switch (rec) {
-      case 'Ready':
-        return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-      case 'Ready with Risk':
-        return 'text-amber-700 bg-amber-50 border-amber-200';
-      case 'Not Ready':
-        return 'text-red-700 bg-red-50 border-red-200';
-      case 'Waiver Required':
-        return 'text-purple-700 bg-purple-50 border-purple-200';
-      default:
-        return 'text-slate-700 bg-slate-50 border-slate-200';
-    }
-  };
+  const releases = useMemo(() => {
+    return MOCK_RELEASES.filter((r) => {
+      if (filters.application && !r.applications.includes(filters.application)) return false;
+      if (filters.itsmStatus && r.status !== filters.itsmStatus) return false;
+      if (filters.qaManual === 'yes' && r.qaManual.total === 0) return false;
+      if (filters.qaManual === 'no' && r.qaManual.total > 0) return false;
+      if (filters.securityScan === 'yes' && r.security.state === 'not_completed') return false;
+      if (filters.securityScan === 'no' && r.security.state !== 'not_completed') return false;
+      return true;
+    });
+  }, [filters]);
+
+  const kpis = useMemo(() => {
+    const total = MOCK_RELEASES.length;
+    const noReleaseEvent = MOCK_RELEASES.filter((r) => !r.hasReleaseEvent).length;
+    const noQaTesting = MOCK_RELEASES.filter((r) => r.qaManual.total === 0 && r.qaAutomation.total === 0).length;
+    const withOpenDefects = MOCK_RELEASES.filter((r) => r.defects.open > 0).length;
+    const noSecurity = MOCK_RELEASES.filter((r) => r.security.state === 'not_completed').length;
+    const noUnitTests = MOCK_RELEASES.filter((r) => r.coverage.overall === 0).length;
+    const pct = (n) => `${Math.round((n / total) * 1000) / 10}%`;
+
+    return [
+      { id: 'total', label: 'Total Releases', value: total, alert: false },
+      { id: 'no_event', label: 'No Release', description: 'Releases with no scheduled release event', value: noReleaseEvent, changeText: pct(noReleaseEvent), alert: true },
+      { id: 'no_qa', label: 'No QA Testing', description: 'Releases with no QA test cases executed', value: noQaTesting, changeText: pct(noQaTesting), alert: true },
+      { id: 'open_defects', label: 'Open Defects', description: 'Releases with at least one open defect', value: withOpenDefects, changeText: pct(withOpenDefects), alert: true },
+      { id: 'no_security', label: 'No Security', description: 'Releases with no completed security scan', value: noSecurity, changeText: pct(noSecurity), alert: true },
+      { id: 'no_unit', label: 'No Unit Tests', description: 'Releases with 0% unit test coverage', value: noUnitTests, changeText: pct(noUnitTests), alert: true },
+    ];
+  }, []);
+
+  const filterFields = useMemo(
+    () => [
+      { id: 'application', label: 'Application', type: 'select', options: APPLICATION_OPTIONS, defaultValue: '' },
+      { id: 'itsmStatus', label: 'ITSM Status', type: 'select', options: STATUS_OPTIONS, defaultValue: '' },
+      { id: 'qaManual', label: 'QA Manual Testing', type: 'select', options: YES_NO_OPTIONS, defaultValue: '' },
+      { id: 'securityScan', label: 'Security Scan', type: 'select', options: YES_NO_OPTIONS, defaultValue: '' },
+    ],
+    []
+  );
+
+  const columns = useMemo(
+    () => [
+      {
+        id: 'actions',
+        header: '',
+        size: 70,
+        enableSorting: false,
+        enableHiding: false,
+        cell: ({ row }) => (
+          <button type="button" onClick={() => handleReleaseClick(row.original.id)} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label={`View ${row.original.eventName}`}>
+            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        ),
+      },
+      { accessorKey: 'crq', header: 'CRQ #', size: 150 },
+      {
+        accessorKey: 'eventCode',
+        header: 'Release Event',
+        size: 190,
+        cell: ({ row }) => (
+          <div className="flex flex-col gap-0.5">
+            <button type="button" onClick={() => handleReleaseClick(row.original.id)} className="text-left text-xs font-semibold text-humana-green-600 hover:text-humana-green-700 hover:underline">
+              {row.original.eventCode}
+            </button>
+            <span className="text-sm text-slate-700">{row.original.eventName}</span>
+            <span className="text-2xs text-slate-400">{formatDate(row.original.startDate)}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'applications',
+        header: 'Applications',
+        size: 150,
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.applications.map((app) => (
+              <Badge key={app} variant="info" size="sm">{app}</Badge>
+            ))}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'startDate',
+        header: 'Start Date',
+        size: 100,
+        cell: ({ row }) => <span className="text-sm text-slate-600">{formatDate(row.original.startDate, DATE_FORMATS.SHORT)}</span>,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        size: 150,
+        cell: ({ row }) => {
+          const meta = STATUS_META[row.original.status];
+          return <Badge variant={meta.variant} size="sm" className="uppercase tracking-wide">{meta.label}</Badge>;
+        },
+      },
+      {
+        id: 'qaManual',
+        header: 'QA Manual Testing',
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const qa = row.original.qaManual;
+          const pct = qa.total > 0 ? Math.round((qa.executed / qa.total) * 100) : 0;
+          return (
+            <div className="flex items-center gap-2">
+              <RingGauge value={pct} size={44} strokeWidth={4} />
+              <div className="flex flex-col text-2xs text-slate-500">
+                <span>{qa.executed} / {qa.total} Test Cases Executed</span>
+                {qa.blocked > 0 ? <span className="text-danger-600">{qa.blocked} Blocked</span> : null}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'qaAutomation',
+        header: 'QA Automation Testing',
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const qa = row.original.qaAutomation;
+          const pct = qa.total > 0 ? Math.round((qa.automated / qa.total) * 100) : 0;
+          return (
+            <div className="flex items-center gap-2">
+              <RingGauge value={pct} size={44} strokeWidth={4} />
+              <div className="flex flex-col text-2xs text-slate-500">
+                <span>{qa.automated} / {qa.total} Automated</span>
+                {qa.failed > 0 ? <span className="text-danger-600">{qa.failed} Failed</span> : null}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'defects',
+        header: 'Defects',
+        size: 100,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const d = row.original.defects;
+          return (
+            <div className="flex flex-col text-xs">
+              <span className="text-danger-600">Open: {d.open}</span>
+              <span className="text-success-600">Closed: {d.closed}</span>
+              <span className="font-semibold text-slate-700">Total: {d.open + d.closed}</span>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'security',
+        header: 'Security Scan',
+        size: 130,
+        enableSorting: false,
+        cell: ({ row }) => <SecurityScanCell security={row.original.security} />,
+      },
+      {
+        id: 'coverage',
+        header: 'Unit Test Coverage',
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const c = row.original.coverage;
+          return (
+            <div className="flex items-center gap-2">
+              <RingGauge value={c.overall} size={44} strokeWidth={4} />
+              <div className="flex flex-col text-2xs text-slate-500">
+                <span>Overall Code: <span className="font-medium text-slate-700">{c.overall}%</span></span>
+                <span>New Code: <span className="font-medium text-slate-700">{c.newCode}%</span></span>
+              </div>
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -146,121 +339,50 @@ export function ReleaseReadinessPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold text-slate-900">Release Readiness</h1>
-          <p className="text-sm text-slate-500">
-            Quality scores, gate compliance, and deployment confidence metrics for pending releases.
-          </p>
+          <p className="text-sm text-slate-500">Assess release quality and readiness across Humana applications.</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" iconLeft={<RefreshCw className="h-3.5 w-3.5" />} onClick={handleRefresh}>
+          <Button variant="outline" size="sm" iconLeft={<RefreshCw className={loading ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />} onClick={handleRefresh}>
             Recalculate Scores
           </Button>
         </div>
       </div>
 
+      {/* Filters */}
+      <FilterBar fields={filterFields} values={filters} onChange={setFilters} liveMode showApplyButton={false} showResetButton showActiveFilters />
+
       {/* KPI Section */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active Releases" value="3" trend="stable" changePercent="0 vs last week" status="info" />
-        <KpiCard label="Average Readiness Score" value="84%" trend="up" changePercent="+3.2%" status="success" />
-        <KpiCard label="Passed Gates" value="2 / 3" trend="stable" changePercent="66.6% compliance" status="warning" />
-        <KpiCard label="Deployment Risks" value="1 High" trend="down" changePercent="-1 high risk" status="danger" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {kpis.map((kpi) => (
+          <div key={kpi.id} className="relative">
+            <KpiCard label={kpi.label} value={kpi.value} unit="count" description={kpi.description} changeText={kpi.changeText} changeTone="muted" />
+            {kpi.alert ? (
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-2xs font-bold text-white ring-2 ring-white" aria-hidden="true">
+                !
+              </span>
+            ) : null}
+          </div>
+        ))}
       </div>
 
-      {/* Releases Cards */}
-      <div className="flex flex-col gap-6">
-        {releases.map((rel) => (
-          <div key={rel.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            {/* Header info */}
-            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{rel.id}</span>
-                  <h3 className="text-base font-semibold text-slate-900">{rel.name}</h3>
-                  <Badge variant="primary" size="sm">{rel.segment}</Badge>
-                </div>
-                <p className="text-xs text-slate-500">
-                  Target Date: <span className="font-medium">{rel.releaseDate}</span> | Application: <span className="font-medium text-slate-700">{rel.application}</span>
-                </p>
-              </div>
+      {/* Releases table */}
+      <DataTable
+        columns={columns}
+        data={releases}
+        enableExport
+        pageSize={10}
+        searchPlaceholder="Search releases, CRQs, applications..."
+        exportFilename="release-readiness"
+        emptyMessage="No releases match the current filters."
+      />
 
-              <div className="flex items-center gap-3">
-                <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getRecommendationColor(rel.recommendation)}`}>
-                  {rel.recommendation}
-                </div>
-                <Button variant="outline" size="sm" iconRight={<ArrowRight className="h-3.5 w-3.5" />} onClick={() => handleReleaseClick(rel.id)}>
-                  View Details
-                </Button>
-              </div>
-            </div>
-
-            {/* Scores panel */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {/* Overall readiness */}
-              <div className="flex flex-col items-center justify-center p-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 text-center">
-                <span className="text-2xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Overall Readiness</span>
-                <span className={`text-3xl font-extrabold mb-1 ${rel.overallScore >= 80 ? 'text-emerald-600' : rel.overallScore >= 70 ? 'text-amber-500' : 'text-red-500'}`}>
-                  {rel.overallScore}%
-                </span>
-                <Progress value={rel.overallScore} max={100} size="xs" variant={rel.overallScore >= 80 ? 'success' : rel.overallScore >= 70 ? 'warning' : 'danger'} />
-              </div>
-
-              {/* Business Readiness */}
-              <div className="flex flex-col justify-between p-4 bg-white rounded-xl border border-slate-100">
-                <span className="text-xs font-medium text-slate-500">Business Readiness</span>
-                <div className="flex items-end justify-between mt-4">
-                  <span className="text-xl font-bold text-slate-950">{rel.businessScore}%</span>
-                  <span className="text-2xs text-emerald-600 font-semibold">On Track</span>
-                </div>
-              </div>
-
-              {/* Technical Readiness */}
-              <div className="flex flex-col justify-between p-4 bg-white rounded-xl border border-slate-100">
-                <span className="text-xs font-medium text-slate-500">Technical Readiness</span>
-                <div className="flex items-end justify-between mt-4">
-                  <span className="text-xl font-bold text-slate-950">{rel.technicalScore}%</span>
-                  <span className={`text-2xs font-semibold ${rel.technicalScore >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                    {rel.technicalScore >= 80 ? 'On Track' : 'Needs Review'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Quality Readiness */}
-              <div className="flex flex-col justify-between p-4 bg-white rounded-xl border border-slate-100">
-                <span className="text-xs font-medium text-slate-500">Quality Readiness</span>
-                <div className="flex items-end justify-between mt-4">
-                  <span className="text-xl font-bold text-slate-950">{rel.qualityScore}%</span>
-                  <span className="text-2xs text-emerald-600 font-semibold">Passed Gates</span>
-                </div>
-              </div>
-
-              {/* Operational Readiness */}
-              <div className="flex flex-col justify-between p-4 bg-white rounded-xl border border-slate-100">
-                <span className="text-xs font-medium text-slate-500">Operational Readiness</span>
-                <div className="flex items-end justify-between mt-4">
-                  <span className="text-xl font-bold text-slate-950">{rel.operationalScore}%</span>
-                  <span className="text-2xs text-emerald-600 font-semibold">Stable</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Meta details footer */}
-            <div className="bg-slate-50/30 border-t border-slate-100 px-6 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="h-4 w-4 text-slate-400" />
-                <span>Confidence: <strong className="text-slate-800">{rel.confidence}%</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ShieldAlert className="h-4 w-4 text-slate-400" />
-                <span>Risk: <strong className="text-slate-800 capitalize">{rel.risk}</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-slate-400" />
-                <span>Test Cases: <strong className="text-slate-800">{rel.testCompletion}% Complete</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ThumbsUp className="h-4 w-4 text-slate-400" />
-                <span>Critical Defects: <strong className="text-slate-800">{rel.criticalDefects}</strong></span>
-              </div>
-            </div>
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-200 pt-4 text-xs text-slate-500">
+        {LEGEND.map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            {item.icon}
+            <span className="font-medium text-slate-700">{item.label}</span>
+            <span className="text-slate-400">{item.description}</span>
           </div>
         ))}
       </div>
@@ -268,4 +390,7 @@ export function ReleaseReadinessPage() {
   );
 }
 
+ReleaseReadinessPage.displayName = 'ReleaseReadinessPage';
+
+export { ReleaseReadinessPage };
 export default ReleaseReadinessPage;

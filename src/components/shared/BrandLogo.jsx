@@ -7,12 +7,12 @@ import { cn } from '@/lib/utils';
  * @type {Object<string, { mark: number, eqip: string, tag: string, gap: string }>}
  */
 const sizeMap = {
-  xs: { mark: 22, eqip: 'text-base', tag: 'text-[9px]', gap: 'gap-2' },
-  sm: { mark: 26, eqip: 'text-lg', tag: 'text-[10px]', gap: 'gap-2.5' },
-  md: { mark: 32, eqip: 'text-2xl', tag: 'text-[11px]', gap: 'gap-3' },
-  lg: { mark: 38, eqip: 'text-3xl', tag: 'text-xs', gap: 'gap-3' },
-  xl: { mark: 46, eqip: 'text-4xl', tag: 'text-sm', gap: 'gap-3.5' },
-  '2xl': { mark: 56, eqip: 'text-5xl', tag: 'text-base', gap: 'gap-4' },
+  xs: { mark: 22, eqip: 'text-base', humana: 'text-[10px]', tag: 'text-[9px]', gap: 'gap-2' },
+  sm: { mark: 26, eqip: 'text-lg', humana: 'text-xs', tag: 'text-[10px]', gap: 'gap-2.5' },
+  md: { mark: 32, eqip: 'text-2xl', humana: 'text-sm', tag: 'text-[11px]', gap: 'gap-3' },
+  lg: { mark: 38, eqip: 'text-3xl', humana: 'text-base', tag: 'text-xs', gap: 'gap-3' },
+  xl: { mark: 46, eqip: 'text-4xl', humana: 'text-lg', tag: 'text-sm', gap: 'gap-3.5' },
+  '2xl': { mark: 56, eqip: 'text-5xl', humana: 'text-xl', tag: 'text-base', gap: 'gap-4' },
 };
 
 /**
@@ -60,17 +60,19 @@ EqipMark.propTypes = {
  * @param {'xs'|'sm'|'md'|'lg'|'xl'|'2xl'} [props.size='md'] - Overall size
  * @param {string} [props.tagline] - Optional tagline shown under the wordmark
  * @param {boolean} [props.showText=true] - Whether to render the wordmark next to the mark
+ * @param {boolean} [props.showHumana=true] - Whether to render the "Humana." sub-wordmark under "EQIP"
  * @param {string} [props.className] - Additional class names for the container
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
 const BrandLogo = forwardRef(function BrandLogo(
-  { variant = 'light', size = 'md', tagline, showText = true, className, ...props },
+  { variant = 'light', size = 'md', tagline, showText = true, showHumana = true, className, ...props },
   ref
 ) {
   const s = sizeMap[size] || sizeMap.md;
   const isLight = variant !== 'dark';
   const eqipColor = isLight ? 'text-white' : 'text-navy-900';
+  const humanaColor = isLight ? 'text-humana-green-400' : 'text-humana-green-600';
   const tagColor = isLight ? 'text-slate-400' : 'text-slate-500';
 
   return (
@@ -78,13 +80,18 @@ const BrandLogo = forwardRef(function BrandLogo(
       ref={ref}
       className={cn('inline-flex items-center', s.gap, className)}
       role="img"
-      aria-label="EQIP Quality Platform"
+      aria-label="EQIP Humana Quality Platform"
       {...props}
     >
       <EqipMark size={s.mark} />
       {showText ? (
         <span className="flex max-w-[150px] flex-col leading-none">
           <span className={cn('font-bold tracking-tight', s.eqip, eqipColor)}>EQIP</span>
+          {showHumana ? (
+            <span className={cn('font-semibold leading-tight tracking-tight', s.humana, humanaColor)}>
+              Humana.
+            </span>
+          ) : null}
           {tagline ? (
             <span className={cn('mt-1 font-medium leading-tight tracking-wide', s.tag, tagColor)}>
               {tagline}
@@ -103,6 +110,7 @@ BrandLogo.propTypes = {
   size: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl', '2xl']),
   tagline: PropTypes.string,
   showText: PropTypes.bool,
+  showHumana: PropTypes.bool,
   className: PropTypes.string,
 };
 

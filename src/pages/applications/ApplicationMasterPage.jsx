@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import {
   Boxes,
   Workflow,
@@ -46,7 +48,43 @@ const KPIS = [
   { id: 'owners', label: 'Application Owners', value: 142, changeText: 'No change', trend: 'stable', icon: <Users />, tone: 'orange' },
 ];
 
-const TABS = ['Applications', 'Application Map', 'Inventory Insights', 'Lifecycle', 'Quality Attributes'];
+const TABS = ['Applications', 'Application Map', 'Inventory Insights', 'Lifecycle', 'Quality Attributes', 'APIs & Services', 'Technologies & Frameworks', 'Dependencies', 'Ownership & Contacts'];
+
+/** Maps the sidebar's hash-based sub-nav links (Application Master §6.4) to a tab label. */
+const HASH_TAB_MAP = {
+  '#apis': 'APIs & Services',
+  '#tech': 'Technologies & Frameworks',
+  '#dependencies': 'Dependencies',
+  '#ownership': 'Ownership & Contacts',
+};
+
+/** Mock API catalog for the "APIs & Services" sub-nav tab. */
+const API_CATALOG = [
+  { name: '/members/{id}/eligibility', method: 'GET', app: 'Member Portal', status: 'Healthy' },
+  { name: '/claims/submit', method: 'POST', app: 'Claims Platform', status: 'Healthy' },
+  { name: '/providers/search', method: 'GET', app: 'Provider Portal', status: 'Degraded' },
+  { name: '/enrollment/plans', method: 'GET', app: 'Enrollment System', status: 'Healthy' },
+  { name: '/billing/invoices', method: 'GET', app: 'Billing Platform', status: 'Healthy' },
+  { name: '/pharmacy/formulary', method: 'GET', app: 'Pharmacy Portal', status: 'Healthy' },
+  { name: '/reports/generate', method: 'POST', app: 'Reporting Platform', status: 'Healthy' },
+  { name: '/care/gaps', method: 'GET', app: 'Care Management', status: 'Degraded' },
+  { name: '/auth/token', method: 'POST', app: 'Auth Service', status: 'Healthy' },
+  { name: '/notifications/send', method: 'POST', app: 'Notification Hub', status: 'Healthy' },
+];
+
+/** Mock upstream dependency graph for the "Dependencies" sub-nav tab. */
+const DEPENDENCY_MAP = {
+  'Member Portal': ['Auth Service', 'Notification Hub'],
+  'Claims Platform': ['Provider Portal', 'Payment Gateway'],
+  'Provider Portal': ['Auth Service', 'Provider Directory'],
+  'Enrollment System': ['Eligibility API', 'Auth Service'],
+  'Billing Platform': ['Payment Gateway', 'Claims Platform'],
+  'Pharmacy Portal': ['Formulary Service', 'Member Portal'],
+  'Reporting Platform': ['Data Lake Sync'],
+  'Care Management': ['Care Gaps Engine', 'Member Portal'],
+};
+
+const API_STATUS_VARIANT = { Healthy: 'success', Degraded: 'warning' };
 
 /** The exact rows shown in the mock, followed by generated rows so filtering
  *  and pagination have realistic volume. */
@@ -157,6 +195,109 @@ function SortHeader({ label, field, sort, onSort, align = 'left' }) {
   );
 }
 
+/** Deterministic mock release history for the Application Detail dialog (PRD §6.5). */
+function getReleaseHistory(app) {
+  return [
+    { version: `${app.code}-R3`, date: app.updated, status: app.score >= 85 ? 'Passed' : app.score >= 70 ? 'Passed with Risk' : 'Failed' },
+    { version: `${app.code}-R2`, date: 'Apr 12, 2026', status: 'Passed' },
+    { version: `${app.code}-R1`, date: 'Feb 3, 2026', status: 'Passed' },
+  ];
+}
+
+const RELEASE_STATUS_VARIANT = { Passed: 'success', 'Passed with Risk': 'warning', Failed: 'error' };
+
+/** Deterministic mock AI recommendation for the Application Detail dialog (PRD §6.5 "AI Recommendations"). */
+function getAiRecommendation(app) {
+  if (app.score >= 90) return `${app.name} is performing well against its quality gates. No immediate action needed.`;
+  if (app.score >= 70) return `Consider increasing automation coverage for ${app.name} to reduce regression risk ahead of the next release.`;
+  return `${app.name} is below the quality threshold — recommend a focused remediation sprint before the next release.`;
+}
+
+/**
+ * Application Detail dialog — the PRD §6.5 "Application Detail Screen" fields
+ * (summary, ownership, segment alignment, quality score, release history, and
+ * an AI recommendation) rendered over the selected application's mock data.
+ *
+ * @param {object} props
+ * @param {object|null} props.app - The selected application, or null when closed
+ * @param {function(boolean): void} props.onOpenChange - Dialog open-state change handler
+ * @returns {React.ReactElement}
+ */
+function ApplicationDetailDialog({ app, onOpenChange }) {
+  return (
+    <Dialog open={Boolean(app)} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        {app ? (
+          <>
+            <DialogHeader>
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-humana-green-50 text-sm font-semibold text-humana-green-700">{app.code}</span>
+                <div className="min-w-0 flex-1">
+                  <DialogTitle className="pr-8">{app.name}</DialogTitle>
+                  <DialogDescription className="mt-1">{app.id} · {app.capability}</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Badge variant={STAGE_VARIANT[app.stage]} size="md">{app.stage}</Badge>
+              <Badge variant="outline" size="md">
+                <span className={cn('mr-1.5 h-2 w-2 rounded-full', CRIT_DOT[app.criticality])} aria-hidden="true" />
+                {app.criticality} Criticality
+              </Badge>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="flex flex-col items-center rounded-lg border border-slate-200 p-3">
+                <ScoreRing score={app.score} />
+                <span className="mt-1.5 text-2xs font-medium text-slate-500">Quality Score</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 p-3">
+                <span className="text-lg font-semibold text-slate-900">{app.envs}</span>
+                <span className="text-2xs font-medium text-slate-500">Environments</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 p-3">
+                <Avatar name={app.owner} size="sm" />
+                <span className="mt-1 max-w-full truncate text-2xs font-medium text-slate-500">{app.owner}</span>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <span className="text-2xs font-semibold uppercase tracking-wider text-slate-400">Technologies</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {app.tech.map((t) => <Badge key={t} variant="outline" size="sm">{t}</Badge>)}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <span className="text-2xs font-semibold uppercase tracking-wider text-slate-400">Release History</span>
+              <div className="mt-1.5 flex flex-col divide-y divide-slate-100 rounded-lg border border-slate-200">
+                {getReleaseHistory(app).map((r) => (
+                  <div key={r.version} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <span className="font-medium text-slate-800">{r.version}</span>
+                    <span className="text-slate-500">{r.date}</span>
+                    <Badge variant={RELEASE_STATUS_VARIANT[r.status]} size="sm">{r.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-humana-green-200 bg-humana-green-50 p-3">
+              <span className="text-2xs font-semibold uppercase tracking-wider text-humana-green-700">AI Recommendation</span>
+              <p className="mt-1 text-sm text-humana-green-900">{getAiRecommendation(app)}</p>
+            </div>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+ApplicationDetailDialog.propTypes = {
+  app: PropTypes.object,
+  onOpenChange: PropTypes.func.isRequired,
+};
+
 /**
  * Application Master — single source of truth for applications. Interactive
  * grid (search, filter, sort, paginate, export, add) over mock data. Matches
@@ -167,17 +308,26 @@ function SortHeader({ label, field, sort, onSort, align = 'left' }) {
 function ApplicationMasterPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
+  const location = useLocation();
 
   const [apps, setApps] = useState(buildApplications);
-  const [activeTab, setActiveTab] = useState('Applications');
+  const [activeTab, setActiveTab] = useState(() => HASH_TAB_MAP[location.hash] || 'Applications');
+
+  useEffect(() => {
+    setActiveTab(HASH_TAB_MAP[location.hash] || 'Applications');
+  }, [location.hash]);
   const [search, setSearch] = useState('');
   const [fCapability, setFCapability] = useState('');
   const [fStage, setFStage] = useState('');
   const [fCrit, setFCrit] = useState('');
   const [fScore, setFScore] = useState('');
+  const [fOwner, setFOwner] = useState('');
+  const [fTech, setFTech] = useState('');
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [sort, setSort] = useState({ key: 'name', dir: 'asc' });
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
+  const [detailApp, setDetailApp] = useState(null);
   const [form, setForm] = useState({ name: '', capability: CAPABILITIES[0], owner: OWNERS[0], stage: 'Production', criticality: 'Medium' });
 
   useEffect(() => {
@@ -201,6 +351,8 @@ function ApplicationMasterPage() {
       if (fCapability && a.capability !== fCapability) return false;
       if (fStage && a.stage !== fStage) return false;
       if (fCrit && a.criticality !== fCrit) return false;
+      if (fOwner && a.owner !== fOwner) return false;
+      if (fTech && !a.tech.includes(fTech)) return false;
       if (!scoreMatch(a.score)) return false;
       return true;
     });
@@ -211,13 +363,13 @@ function ApplicationMasterPage() {
       if (typeof av === 'number') return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
     });
-  }, [apps, search, fCapability, fStage, fCrit, scoreMatch, sort]);
+  }, [apps, search, fCapability, fStage, fCrit, fOwner, fTech, scoreMatch, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  useEffect(() => { setPage(1); }, [search, fCapability, fStage, fCrit, fScore]);
+  useEffect(() => { setPage(1); }, [search, fCapability, fStage, fCrit, fScore, fOwner, fTech]);
 
   const handleSort = useCallback((key) => {
     setSort((prev) => (prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
@@ -318,9 +470,20 @@ function ApplicationMasterPage() {
             <FilterField label="Lifecycle Stage" value={fStage} onChange={setFStage} options={[{ value: '', label: 'All' }, ...STAGES.map((s) => ({ value: s, label: s }))]} />
             <FilterField label="Criticality" value={fCrit} onChange={setFCrit} options={[{ value: '', label: 'All' }, ...CRITS.map((s) => ({ value: s, label: s }))]} />
             <FilterField label="Quality Score" value={fScore} onChange={setFScore} options={[{ value: '', label: 'All' }, { value: '90+', label: '90+' }, { value: '70-89', label: '70-89' }, { value: 'Below 70', label: 'Below 70' }]} />
-            <Button variant="outline" size="sm" iconLeft={<SlidersHorizontal className="h-3.5 w-3.5" />} onClick={() => toast({ title: 'More Filters', description: 'Advanced filters are a demo in this frontend-only build.' })}>More Filters</Button>
+            <Button variant="outline" size="sm" iconLeft={<SlidersHorizontal className="h-3.5 w-3.5" />} onClick={() => setShowMoreFilters((s) => !s)}>More Filters</Button>
             <Button variant="outline" size="sm" iconLeft={<Download className="h-3.5 w-3.5" />} onClick={handleExport}>Export</Button>
             <Button variant="primary" size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />} onClick={() => setAddOpen(true)}>Add Application</Button>
+            {showMoreFilters ? (
+              <div className="flex w-full flex-wrap items-end gap-3 border-t border-slate-100 pt-3">
+                <FilterField label="Owner" value={fOwner} onChange={setFOwner} options={[{ value: '', label: 'All' }, ...OWNERS.map((o) => ({ value: o, label: o }))]} />
+                <FilterField label="Technology" value={fTech} onChange={setFTech} options={[{ value: '', label: 'All' }, ...TECHS.map((t) => ({ value: t, label: t }))]} />
+                {(fOwner || fTech) ? (
+                  <button type="button" onClick={() => { setFOwner(''); setFTech(''); }} className="mb-0.5 text-xs font-medium text-slate-500 hover:text-slate-700">
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           {/* Applications grid */}
@@ -357,7 +520,7 @@ function ApplicationMasterPage() {
                     <tr
                       key={app.id}
                       className="cursor-pointer border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60"
-                      onClick={() => toast({ title: app.name, description: `${app.id} · ${app.capability} · Owner ${app.owner}` })}
+                      onClick={() => setDetailApp(app)}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -397,7 +560,7 @@ function ApplicationMasterPage() {
                         <p className="text-2xs text-slate-400">{app.ago}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); toast({ title: app.name, description: 'Row actions are a demo in this frontend-only build.' }); }} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label={`Actions for ${app.name}`}>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setDetailApp(app); }} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label={`View details for ${app.name}`}>
                           <MoreVertical className="h-4 w-4" />
                         </button>
                       </td>
@@ -456,6 +619,9 @@ function ApplicationMasterPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Application Detail dialog */}
+      <ApplicationDetailDialog app={detailApp} onOpenChange={(open) => { if (!open) setDetailApp(null); }} />
     </div>
   );
 }
@@ -516,6 +682,110 @@ function TabSummary({ tab, apps }) {
   }
   if (tab === 'Inventory Insights') {
     return <BreakdownGrid title="Applications by Business Capability" rows={groupBy('capability')} total={apps.length} />;
+  }
+  if (tab === 'Technologies & Frameworks') {
+    const counts = {};
+    for (const a of apps) {
+      for (const t of a.tech) counts[t] = (counts[t] || 0) + 1;
+    }
+    const rows = Object.entries(counts).sort((x, y) => y[1] - x[1]);
+    return <BreakdownGrid title="Applications by Technology" rows={rows} total={apps.length} />;
+  }
+  if (tab === 'Ownership & Contacts') {
+    const byOwner = {};
+    for (const a of apps) {
+      if (!byOwner[a.owner]) byOwner[a.owner] = [];
+      byOwner[a.owner].push(a.name);
+    }
+    const rows = Object.entries(byOwner).sort((x, y) => y[1].length - x[1].length);
+    return (
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <h3 className="text-base font-semibold text-slate-900">Ownership &amp; Contacts</h3>
+          <p className="text-sm text-slate-500">Application owners and the applications assigned to each.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-2xs uppercase tracking-wider text-slate-500">
+                <th className="px-5 py-2.5 font-medium">Owner</th>
+                <th className="px-5 py-2.5 font-medium">Email</th>
+                <th className="px-5 py-2.5 font-medium">Applications Owned</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([owner, appNames]) => (
+                <tr key={owner} className="border-b border-slate-100 last:border-b-0">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={owner} size="sm" />
+                      <span className="font-medium text-slate-800">{owner}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-slate-500">{owner.toLowerCase().replace(/[^a-z]+/g, '.')}@humana.com</td>
+                  <td className="px-5 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {appNames.map((n) => <Badge key={n} variant="outline" size="sm">{n}</Badge>)}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+  if (tab === 'APIs & Services') {
+    return (
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <h3 className="text-base font-semibold text-slate-900">APIs &amp; Services</h3>
+          <p className="text-sm text-slate-500">Registered API endpoints across the application portfolio.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-2xs uppercase tracking-wider text-slate-500">
+                <th className="px-5 py-2.5 font-medium">Endpoint</th>
+                <th className="px-5 py-2.5 font-medium">Method</th>
+                <th className="px-5 py-2.5 font-medium">Owning Application</th>
+                <th className="px-5 py-2.5 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {API_CATALOG.map((api) => (
+                <tr key={api.name} className="border-b border-slate-100 last:border-b-0">
+                  <td className="px-5 py-3 font-mono text-xs text-slate-700">{api.name}</td>
+                  <td className="px-5 py-3"><Badge variant="neutral" size="sm">{api.method}</Badge></td>
+                  <td className="px-5 py-3 text-slate-600">{api.app}</td>
+                  <td className="px-5 py-3"><Badge variant={API_STATUS_VARIANT[api.status]} size="sm">{api.status}</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+  if (tab === 'Dependencies') {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+        <h3 className="text-base font-semibold text-slate-900">Application Dependencies</h3>
+        <p className="text-sm text-slate-500">Upstream services each application relies on.</p>
+        <div className="mt-4 flex flex-col divide-y divide-slate-100">
+          {Object.entries(DEPENDENCY_MAP).map(([app, deps]) => (
+            <div key={app} className="flex flex-wrap items-center gap-3 py-3 first:pt-0">
+              <span className="w-44 shrink-0 font-medium text-slate-800">{app}</span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden="true" />
+              <div className="flex flex-wrap gap-1.5">
+                {deps.map((d) => <Badge key={d} variant="info" size="sm">{d}</Badge>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
   // Application Map
   return (

@@ -9,11 +9,19 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { AlertCircle, Columns3, Filter, Rows3, Download, Search, Info } from 'lucide-react';
+import { AlertCircle, Columns3, Rows3, Download, Search, Info } from 'lucide-react';
 import { cn, downloadCSV } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/DropdownMenu';
 import { ROUTES } from '@/lib/constants';
 
 /* Mock data mirrors Docs/mocks/05-hth-in-sprint-view.png (frontend-only). */
@@ -23,6 +31,13 @@ const FILTERS = [
   { label: 'Project', options: ['Member Portal', 'Claims Platform', 'Provider Portal'] },
   { label: 'Squad', options: ['Member Portal Team', 'Claims Team', 'Provider Team'] },
   { label: 'Sprint', options: ['FY26 Q4 PI SP2', 'FY26 Q4 PI SP1', 'FY26 Q3 PI SP6'] },
+];
+
+const DEFECT_COLS = [
+  { key: 'total', label: 'Total Defects' },
+  { key: 'open', label: 'Open' },
+  { key: 'closed', label: 'Closed' },
+  { key: 'noAcher', label: 'Without Acher ID' },
 ];
 
 const STORY_TILES = [
@@ -133,6 +148,8 @@ function InSprintViewPage() {
   const [trendView, setTrendView] = useState('In-Sprint Automation');
   const [defectTab, setDefectTab] = useState('Defects');
   const [search, setSearch] = useState('');
+  const [hiddenCols, setHiddenCols] = useState(() => new Set());
+  const [density, setDensity] = useState('comfortable');
 
   useEffect(() => {
     setBreadcrumbs([
@@ -159,6 +176,18 @@ function InSprintViewPage() {
     downloadCSV(defectRows, 'in-sprint-defects.csv');
     toast({ variant: 'success', title: 'Export complete', description: `${defectRows.length} squads exported to CSV.` });
   };
+
+  const toggleCol = (key) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const visibleDefectCols = DEFECT_COLS.filter((c) => !hiddenCols.has(c.key));
+  const cellPad = density === 'compact' ? 'py-1' : 'py-2.5';
 
   return (
     <div className="flex flex-col gap-6">
@@ -266,9 +295,31 @@ function InSprintViewPage() {
 
         {/* Toolbar */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
-          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Filter className="h-3.5 w-3.5" /> Filters</button>
-          <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {DEFECT_COLS.map((c) => (
+                <DropdownMenuCheckboxItem key={c.key} checked={!hiddenCols.has(c.key)} onCheckedChange={() => toggleCol(c.key)}>
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuLabel>Row density</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem checked={density === 'comfortable'} onCheckedChange={() => setDensity('comfortable')}>Comfortable</DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={density === 'compact'} onCheckedChange={() => setDensity('compact')}>Compact</DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Download className="h-3.5 w-3.5" /> Export</button>
           <span className="relative ml-auto">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
@@ -281,30 +332,25 @@ function InSprintViewPage() {
             <thead>
               <tr className="border-b-2 border-danger-500/70 text-2xs uppercase tracking-wider text-slate-500">
                 <th className="px-3 py-2 font-medium">Squad</th>
-                <th className="px-3 py-2 text-right font-medium">Total Defects</th>
-                <th className="px-3 py-2 text-right font-medium">Open</th>
-                <th className="px-3 py-2 text-right font-medium">Closed</th>
-                <th className="px-3 py-2 text-right font-medium">Without Acher ID</th>
+                {visibleDefectCols.map((c) => <th key={c.key} className="px-3 py-2 text-right font-medium">{c.label}</th>)}
               </tr>
             </thead>
             <tbody>
               {defectRows.map((d) => (
                 <tr key={d.squad} className="border-b border-slate-100 hover:bg-slate-50/60">
-                  <td className="px-3 py-2.5 text-slate-700">{d.squad}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-slate-900">{d.total}</td>
-                  <td className="px-3 py-2.5 text-right text-slate-600">{d.open}</td>
-                  <td className="px-3 py-2.5 text-right text-slate-600">{d.closed}</td>
-                  <td className={cn('px-3 py-2.5 text-right', d.noAcher > 0 ? 'font-medium text-danger-600' : 'text-slate-600')}>{d.noAcher}</td>
+                  <td className={cn('px-3 text-slate-700', cellPad)}>{d.squad}</td>
+                  {visibleDefectCols.map((c) => (
+                    <td key={c.key} className={cn('px-3 text-right', cellPad, c.key === 'total' ? 'font-semibold text-slate-900' : c.key === 'noAcher' && d.noAcher > 0 ? 'font-medium text-danger-600' : 'text-slate-600')}>
+                      {d[c.key]}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="bg-slate-50 text-sm font-semibold text-slate-900">
                 <td className="px-3 py-2.5">Total Squads: {defectRows.length}</td>
-                <td className="px-3 py-2.5 text-right">{totals.total}</td>
-                <td className="px-3 py-2.5 text-right">{totals.open}</td>
-                <td className="px-3 py-2.5 text-right">{totals.closed}</td>
-                <td className="px-3 py-2.5 text-right">{totals.noAcher}</td>
+                {visibleDefectCols.map((c) => <td key={c.key} className="px-3 py-2.5 text-right">{totals[c.key]}</td>)}
               </tr>
             </tfoot>
           </table>

@@ -19,6 +19,7 @@ import {
   Search,
   Download,
   Columns3,
+  Rows3,
   X,
   Check,
   FileDown,
@@ -233,6 +234,7 @@ EmptyState.propTypes = {
  * @param {boolean} [props.enableColumnVisibility=true] - Whether column visibility toggle is enabled
  * @param {boolean} [props.enableRowSelection=false] - Whether row selection is enabled
  * @param {boolean} [props.enableExport=false] - Whether export actions are enabled
+ * @param {boolean} [props.enableDensityToggle=false] - Whether the row-density (Comfortable/Compact) toggle is enabled
  * @param {number} [props.pageSize=10] - Default page size
  * @param {number[]} [props.pageSizeOptions=[10, 25, 50, 100]] - Available page size options
  * @param {string} [props.searchPlaceholder='Search...'] - Placeholder text for the search input
@@ -257,6 +259,7 @@ const DataTable = forwardRef(function DataTable(
     enableColumnVisibility = true,
     enableRowSelection = false,
     enableExport = false,
+    enableDensityToggle = false,
     pageSize: defaultPageSize = 10,
     pageSizeOptions = [10, 25, 50, 100],
     searchPlaceholder = 'Search...',
@@ -275,6 +278,7 @@ const DataTable = forwardRef(function DataTable(
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
+  const [density, setDensity] = useState('comfortable');
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: defaultPageSize,
@@ -529,6 +533,30 @@ const DataTable = forwardRef(function DataTable(
               </DropdownMenu>
             ) : null}
 
+            {enableDensityToggle ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconLeft={<Rows3 className="h-3.5 w-3.5" />}
+                  >
+                    Density
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuLabel>Row density</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem checked={density === 'comfortable'} onCheckedChange={() => setDensity('comfortable')}>
+                    Comfortable
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem checked={density === 'compact'} onCheckedChange={() => setDensity('compact')}>
+                    Compact
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+
             {enableExport ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -674,6 +702,7 @@ const DataTable = forwardRef(function DataTable(
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
+                        className={density === 'compact' ? 'py-1.5' : undefined}
                         style={
                           cell.column.columnDef.size
                             ? { width: `${cell.column.columnDef.size}px` }
@@ -778,6 +807,7 @@ DataTable.propTypes = {
   enableColumnVisibility: PropTypes.bool,
   enableRowSelection: PropTypes.bool,
   enableExport: PropTypes.bool,
+  enableDensityToggle: PropTypes.bool,
   pageSize: PropTypes.number,
   pageSizeOptions: PropTypes.arrayOf(PropTypes.number),
   searchPlaceholder: PropTypes.string,

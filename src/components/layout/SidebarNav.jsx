@@ -13,12 +13,15 @@ import {
   ScrollText,
   ShieldCheck,
   Settings,
+  Bookmark,
+  UserCircle,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
-import { ROUTES } from '@/lib/constants';
+import { usePersona } from '@/context/PersonaContext';
+import { ROUTES, PERMISSIONS } from '@/lib/constants';
 
 /**
  * Flat EQIP navigation tree matching the UX mocks (Docs/mocks). Top-level
@@ -47,20 +50,25 @@ const NAV = [
     id: 'hth',
     label: 'Humana Test Harness (HTH)',
     icon: Hexagon,
-    children: [
-      { label: 'HTH Home', to: ROUTES.HTH },
-      { label: 'In-Sprint View', to: ROUTES.HTH_IN_SPRINT },
-      { label: 'Test Cases', to: ROUTES.TEST_CASES },
-      { label: 'Test Executions', to: ROUTES.EXECUTIONS },
-      { label: 'Release Readiness', to: ROUTES.RELEASE_READINESS },
-      { label: 'Scheduler', to: ROUTES.SCHEDULER },
-      { label: 'Automation Intelligence', to: ROUTES.AUTOMATION },
-    ],
+    to: ROUTES.HTH,
   },
   { id: 'ai-agents', label: 'AI Agent Workforce', icon: Bot, to: ROUTES.AI_AGENTS },
   { id: 'kg', label: 'Enterprise Knowledge Graph', icon: Network, to: ROUTES.KNOWLEDGE_GRAPH },
   { id: 'test-data', label: 'Test Data Management', icon: Database, to: ROUTES.TEST_DATA },
-  { id: 'demand', label: 'Demand Management', icon: ClipboardCheck, to: ROUTES.DEMAND },
+  {
+    id: 'demand',
+    label: 'Demand Management',
+    icon: ClipboardCheck,
+    children: [
+      { label: 'Demand Home', to: ROUTES.DEMAND },
+      { label: 'Demand Pipeline', to: `${ROUTES.DEMAND}#pipeline` },
+      { label: 'Demand Intake', to: `${ROUTES.DEMAND}#intake` },
+      { label: 'Demand Inventory', to: `${ROUTES.DEMAND}#inventory` },
+      { label: 'Portfolio Demand', to: `${ROUTES.DEMAND}#portfolio` },
+      { label: 'Approvals', to: `${ROUTES.DEMAND}#approvals` },
+      { label: 'Reports & Analytics', to: `${ROUTES.DEMAND}#reports` },
+    ],
+  },
   {
     id: 'quality-intel',
     label: 'Quality Intelligence',
@@ -79,13 +87,15 @@ const NAV = [
     id: 'admin',
     label: 'Administration',
     icon: Settings,
+    requiredPermission: PERMISSIONS.MANAGE_SETTINGS,
     children: [
       { label: 'Administration', to: ROUTES.ADMIN },
       { label: 'Integrations', to: ROUTES.INTEGRATIONS },
-      { label: 'User Repository', to: ROUTES.USERS },
-      { label: 'My Profile', to: ROUTES.PROFILE },
+      { label: 'User Repository', to: ROUTES.USERS, requiredPermission: PERMISSIONS.MANAGE_USERS },
     ],
   },
+  { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark, to: ROUTES.BOOKMARKS },
+  { id: 'profile', label: 'My Profile', icon: UserCircle, to: ROUTES.PROFILE },
 ];
 
 /** Strips the hash from a nav target to get its route path. */
@@ -103,6 +113,7 @@ const basePath = (to) => to.split('#')[0];
  */
 const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) {
   const { sidebarOpen, toggleSidebar } = useNavigation();
+  const { hasPermission } = usePersona();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -130,7 +141,18 @@ const SidebarNav = forwardRef(function SidebarNav({ className, ...props }, ref) 
   const isExpanded = (item) => (item.id in overrides ? overrides[item.id] : groupHasActive(item));
   const toggleGroup = (item) => setOverrides((prev) => ({ ...prev, [item.id]: !isExpanded(item) }));
 
-  const items = useMemo(() => NAV, []);
+  const canSee = useCallback(
+    (navItem) => !navItem.requiredPermission || hasPermission(navItem.requiredPermission),
+    [hasPermission]
+  );
+
+  const items = useMemo(
+    () =>
+      NAV.filter(canSee).map((item) =>
+        item.children ? { ...item, children: item.children.filter(canSee) } : item
+      ),
+    [canSee]
+  );
 
   return (
     <nav

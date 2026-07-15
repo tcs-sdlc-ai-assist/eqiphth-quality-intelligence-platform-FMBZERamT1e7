@@ -26,8 +26,8 @@ const FILTER_FIELDS = [
     options: [
       { value: '', label: 'All Outcomes' },
       { value: 'success', label: 'Success' },
-      { value: 'failed', label: 'Failed' },
-      { value: 'warning', label: 'Warning' },
+      { value: 'failure', label: 'Failure' },
+      { value: 'denied', label: 'Denied' },
     ],
     defaultValue: '',
   },
@@ -39,7 +39,10 @@ const FILTER_FIELDS = [
       { value: '', label: 'All Segments' },
       { value: 'Enterprise', label: 'Enterprise' },
       { value: 'Medicare', label: 'Medicare' },
+      { value: 'Medicaid', label: 'Medicaid' },
       { value: 'Commercial', label: 'Commercial' },
+      { value: 'Compliance', label: 'Compliance' },
+      { value: 'External', label: 'External' },
     ],
     defaultValue: '',
   },
@@ -118,10 +121,10 @@ export function EQELogPage() {
 
       {/* KPI stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Total Logged Events" value={logs.length.toString()} trend="stable" status="info" />
-        <KpiCard label="Successful Operations" value={logs.filter(l => l.outcome === 'success').length.toString()} trend="up" status="success" />
-        <KpiCard label="Failed Checks" value={logs.filter(l => l.outcome === 'failed').length.toString()} trend="down" status="danger" />
-        <KpiCard label="Sync Quality" value="100%" trend="stable" status="success" />
+        <KpiCard label="Total Logged Events" value={logs.length.toString()} trend="stable" status="completed" />
+        <KpiCard label="Successful Operations" value={logs.filter(l => l.outcome === 'success').length.toString()} trend="improving" status="on_track" />
+        <KpiCard label="Failed Checks" value={logs.filter(l => l.outcome === 'failure' || l.outcome === 'denied').length.toString()} trend="declining" status="critical" />
+        <KpiCard label="Sync Quality" value="100%" trend="stable" status="on_track" />
       </div>
 
       {/* Filters and search */}
@@ -137,7 +140,7 @@ export function EQELogPage() {
             />
           </div>
         </div>
-        <FilterBar fields={FILTER_FIELDS} values={filters} onChange={handleFilterChange} showResetButton />
+        <FilterBar fields={FILTER_FIELDS} values={filters} onChange={handleFilterChange} liveMode showApplyButton={false} showResetButton />
       </div>
 
       {/* Audit Log Table */}

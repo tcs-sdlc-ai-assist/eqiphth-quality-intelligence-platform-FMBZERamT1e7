@@ -1,10 +1,18 @@
 import { useEffect, useState, useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { RefreshCw, Columns3, Filter, Rows3, Download, Search } from 'lucide-react';
+import { RefreshCw, Columns3, Rows3, Download, Search } from 'lucide-react';
 import { cn, downloadCSV } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/DropdownMenu';
 import { ROUTES } from '@/lib/constants';
 
 /* Mock data mirrors Docs/mocks/06-test-cases-inventory.png (frontend-only). */
@@ -111,6 +119,9 @@ function TestCasesInventoryPage() {
   const [metricView, setMetricView] = useState('Automation/Manual');
   const [gridTab, setGridTab] = useState('Testing Type');
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [hiddenCols, setHiddenCols] = useState(() => new Set());
+  const [density, setDensity] = useState('comfortable');
 
   useEffect(() => {
     setBreadcrumbs([
@@ -118,6 +129,26 @@ function TestCasesInventoryPage() {
       { label: 'Test Cases' },
     ]);
   }, [setBreadcrumbs]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      toast({ variant: 'success', title: 'Data refreshed', description: 'Test case inventory recalculated from the latest mock data.' });
+    }, 400);
+  };
+
+  const toggleCol = (key) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const visibleGridCols = GRID_COLS.filter((c) => !hiddenCols.has(c.key));
+  const cellPad = density === 'compact' ? 'py-1' : 'py-2.5';
 
   const dispTotal = DISPOSITION.reduce((s, d) => s + d.value, 0);
   const maxType = Math.max(...TOP_TYPES.map((t) => t.value));
@@ -155,7 +186,7 @@ function TestCasesInventoryPage() {
         {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
         <label className="flex flex-col gap-1"><span className="text-2xs font-medium uppercase tracking-wider text-slate-400">Start Date</span><input type="date" defaultValue="2026-01-18" className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" /></label>
         <label className="flex flex-col gap-1"><span className="text-2xs font-medium uppercase tracking-wider text-slate-400">End Date</span><input type="date" defaultValue="2026-04-18" className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" /></label>
-        <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"><RefreshCw className="h-4 w-4 text-slate-400" /> Refresh</button>
+        <button type="button" onClick={handleRefresh} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"><RefreshCw className={cn('h-4 w-4 text-slate-400', refreshing && 'animate-spin')} /> Refresh</button>
       </div>
 
       {/* Insight panels */}
@@ -238,9 +269,31 @@ function TestCasesInventoryPage() {
           </div>
           {/* Toolbar */}
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
-            <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Filter className="h-3.5 w-3.5" /> Filters</button>
-            <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {GRID_COLS.map((c) => (
+                  <DropdownMenuCheckboxItem key={c.key} checked={!hiddenCols.has(c.key)} onCheckedChange={() => toggleCol(c.key)}>
+                    {c.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuLabel>Row density</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem checked={density === 'comfortable'} onCheckedChange={() => setDensity('comfortable')}>Comfortable</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={density === 'compact'} onCheckedChange={() => setDensity('compact')}>Compact</DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Download className="h-3.5 w-3.5" /> Export</button>
             <span className="relative ml-auto">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -253,15 +306,15 @@ function TestCasesInventoryPage() {
                 <tr className="border-b border-slate-200 text-2xs uppercase tracking-wider text-slate-500">
                   <th className="px-3 py-2 font-medium">Application</th>
                   <th className="px-3 py-2 text-right font-medium">Total</th>
-                  {GRID_COLS.map((c) => <th key={c.key} className="px-3 py-2 text-right font-medium">{c.label}</th>)}
+                  {visibleGridCols.map((c) => <th key={c.key} className="px-3 py-2 text-right font-medium">{c.label}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {gridRows.map((r) => (
                   <tr key={r.app} className="border-b border-slate-100 hover:bg-slate-50/60">
-                    <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">{r.app}</td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-slate-900">{r.total.toLocaleString()}</td>
-                    {GRID_COLS.map((c) => <td key={c.key} className="px-3 py-2.5 text-right text-slate-600">{r[c.key].toLocaleString()}</td>)}
+                    <td className={cn('px-3 whitespace-nowrap text-slate-700', cellPad)}>{r.app}</td>
+                    <td className={cn('px-3 text-right font-semibold text-slate-900', cellPad)}>{r.total.toLocaleString()}</td>
+                    {visibleGridCols.map((c) => <td key={c.key} className={cn('px-3 text-right text-slate-600', cellPad)}>{r[c.key].toLocaleString()}</td>)}
                   </tr>
                 ))}
               </tbody>
@@ -269,7 +322,7 @@ function TestCasesInventoryPage() {
                 <tr className="bg-slate-50 text-xs font-semibold text-slate-900">
                   <td className="px-3 py-2.5">Total Applications: 258</td>
                   <td className="px-3 py-2.5 text-right">{totals.total.toLocaleString()}</td>
-                  {GRID_COLS.map((c) => <td key={c.key} className="px-3 py-2.5 text-right">{totals[c.key].toLocaleString()}</td>)}
+                  {visibleGridCols.map((c) => <td key={c.key} className="px-3 py-2.5 text-right">{totals[c.key].toLocaleString()}</td>)}
                 </tr>
               </tfoot>
             </table>
