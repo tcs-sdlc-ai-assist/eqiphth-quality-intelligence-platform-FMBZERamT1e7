@@ -8,6 +8,9 @@ import { useAuditLog } from '@/context/AuditLogContext';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 
+/** Dummy profile photo for the navbar profile trigger (same source as Application Master). */
+const profilePhoto = (name) => `https://i.pravatar.cc/96?u=${encodeURIComponent(name || 'user')}`;
+
 /**
  * Groups personas by segment for organized display.
  *
@@ -377,6 +380,7 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
   }, [open, handleClose]);
 
   const isCompact = variant === 'compact';
+  const isProfile = variant === 'profile';
 
   const segmentOrder = ['Enterprise', 'Medicare', 'Medicaid', 'Commercial', 'External', 'Compliance'];
   const sortedSegmentKeys = useMemo(() => {
@@ -400,7 +404,7 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
       {...props}
     >
       {/* Simulation label */}
-      {!isCompact ? (
+      {!isCompact && !isProfile ? (
         <div className="flex items-center gap-1.5 mb-1">
           <Shield className="h-3 w-3 text-humana-green-500" aria-hidden="true" />
           <span className="text-2xs font-medium text-humana-green-600 uppercase tracking-wider select-none">
@@ -415,23 +419,28 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
         type="button"
         onClick={handleToggle}
         className={cn(
-          'flex items-center gap-2.5 rounded-lg border bg-white transition-colors duration-200',
-          'border-slate-200 hover:border-slate-300',
+          'flex items-center gap-2.5 rounded-lg transition-colors duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2',
-          isCompact ? 'p-1.5' : 'px-3 py-2 w-full',
-          open && 'border-humana-green-500 ring-2 ring-humana-green-500 ring-offset-2'
+          isProfile
+            ? cn('py-1 pl-1 pr-1.5 hover:bg-slate-100', open && 'bg-slate-100')
+            : cn(
+                'border bg-white border-slate-200 hover:border-slate-300',
+                isCompact ? 'p-1.5' : 'px-3 py-2 w-full',
+                open && 'border-humana-green-500 ring-2 ring-humana-green-500 ring-offset-2'
+              )
         )}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Current persona: ${currentPersona.name}, ${currentPersona.role}. Click to switch persona.`}
       >
         <Avatar
+          src={isProfile ? profilePhoto(currentPersona.name) : undefined}
           name={currentPersona.name}
-          size={isCompact ? 'sm' : 'sm'}
+          size={isProfile ? 'md' : 'sm'}
           className="shrink-0"
         />
         {!isCompact ? (
-          <div className="flex flex-col gap-0 min-w-0 flex-1 text-left">
+          <div className={cn('flex flex-col gap-0 min-w-0 text-left', isProfile ? 'hidden sm:flex' : 'flex-1')}>
             <span className="text-sm font-medium text-slate-900 truncate">
               {currentPersona.name}
             </span>
@@ -464,7 +473,7 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
             className={cn(
               'absolute z-50 mt-1 w-80 max-h-[28rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-dropdown',
               'animate-scale-in',
-              isCompact ? 'right-0' : 'left-0'
+              isCompact || isProfile ? 'right-0' : 'left-0'
             )}
             role="dialog"
             aria-label="Select a persona"
@@ -580,7 +589,7 @@ const PersonaSwitcher = forwardRef(function PersonaSwitcher(
 PersonaSwitcher.displayName = 'PersonaSwitcher';
 
 PersonaSwitcher.propTypes = {
-  variant: PropTypes.oneOf(['compact', 'full']),
+  variant: PropTypes.oneOf(['compact', 'full', 'profile']),
   className: PropTypes.string,
 };
 

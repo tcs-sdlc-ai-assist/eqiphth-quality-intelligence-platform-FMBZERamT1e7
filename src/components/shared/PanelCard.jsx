@@ -1,8 +1,9 @@
 import { forwardRef, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 
 /**
  * Panel card component for grouping related content with title, subtitle,
@@ -33,6 +34,7 @@ const PanelCard = forwardRef(function PanelCard(
     subtitle,
     actions,
     icon,
+    info,
     collapsible = false,
     defaultCollapsed = false,
     collapsed: controlledCollapsed,
@@ -93,9 +95,25 @@ const PanelCard = forwardRef(function PanelCard(
             ) : null}
             <div className="flex flex-col gap-0.5 min-w-0">
               {title ? (
-                <h3 className="text-base font-semibold leading-tight text-slate-900 truncate">
-                  {title}
-                </h3>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h3 className="text-base font-semibold leading-tight text-slate-900 truncate">
+                    {title}
+                  </h3>
+                  {info ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500"
+                          aria-label={typeof info === 'string' ? info : `About ${title}`}
+                        >
+                          <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs">{info}</TooltipContent>
+                    </Tooltip>
+                  ) : null}
+                </div>
               ) : null}
               {subtitle ? (
                 <p className="text-sm text-slate-500 line-clamp-2">
@@ -158,6 +176,7 @@ PanelCard.propTypes = {
   subtitle: PropTypes.string,
   actions: PropTypes.node,
   icon: PropTypes.node,
+  info: PropTypes.node,
   collapsible: PropTypes.bool,
   defaultCollapsed: PropTypes.bool,
   collapsed: PropTypes.bool,

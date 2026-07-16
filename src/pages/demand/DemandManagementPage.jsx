@@ -32,10 +32,11 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { usePersona } from '@/context/PersonaContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
+import { PageActions } from '@/components/layout/PageActions';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { ChartWrapper } from '@/components/shared/ChartWrapper';
 import { DataTable } from '@/components/shared/DataTable';
@@ -49,7 +50,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
-import { downloadCSV } from '@/lib/utils';
+import { cn, downloadCSV } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 
 /* ------------------------------------------------------------------ *
@@ -291,9 +292,9 @@ const DEMAND_REPORTS = [
  * @param {string} props.label - Link text
  * @returns {React.ReactElement}
  */
-function PanelFooterLink({ label, onClick }) {
+function PanelFooterLink({ label, onClick, pushBottom = false }) {
   return (
-    <div className="mt-3 -mx-4 -mb-4 border-t border-slate-100">
+    <div className={cn(pushBottom ? 'mt-auto' : 'mt-3', '-mx-4 -mb-4 border-t border-slate-100')}>
       <button
         type="button"
         onClick={onClick}
@@ -303,6 +304,24 @@ function PanelFooterLink({ label, onClick }) {
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
+  );
+}
+
+/** Solid-fill risk pills (white text) for the At Risk Initiatives table. */
+const RISK_PILL = { High: 'bg-danger-500', Medium: 'bg-warning-500', Low: 'bg-humana-green-500' };
+
+/**
+ * Left-aligned Y-axis category tick for the portfolio bar charts. Anchors the
+ * label at the chart's left edge instead of right-aligning it against the axis.
+ *
+ * @param {object} props - Recharts tick props (x, y, payload injected on clone)
+ * @returns {React.ReactElement}
+ */
+function PortfolioAxisTick({ y, payload }) {
+  return (
+    <text x={6} y={y} dy={4} textAnchor="start" fill="#475569" fontSize={11}>
+      {payload.value}
+    </text>
   );
 }
 
@@ -337,6 +356,9 @@ function DemandManagementPage() {
   const { toast } = useToast();
   const { approvalAuthority } = usePersona();
   const location = useLocation();
+
+  usePageHeader({ title: 'Demand Management', subtitle: `Plan demand. Align capacity. Deliver quality.` });
+
   const [range, setRange] = useState('Last 30 Days');
   const [activeTab, setActiveTab] = useState(() => HASH_TAB_MAP[location.hash] || 'home');
   const [inventorySubTab, setInventorySubTab] = useState('backlog');
@@ -433,24 +455,15 @@ function DemandManagementPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-humana-green-50 text-humana-green-600">
-            <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Demand Management</h1>
-            <p className="text-sm text-slate-500">Plan demand. Align capacity. Deliver quality.</p>
-          </div>
-        </div>
-        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-card">
+      {/* Date range — portalled into the navbar (far right) */}
+      <PageActions>
+        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">
           <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
           <select value={range} onChange={(e) => setRange(e.target.value)} className="bg-transparent focus:outline-none">
             {['Last 30 Days', 'Last 60 Days', 'Last 90 Days'].map((o) => <option key={o}>{o}</option>)}
           </select>
         </div>
-      </div>
+      </PageActions>
 
       {/* Sub-navigation tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -481,6 +494,7 @@ function DemandManagementPage() {
             changeTone={kpi.changeTone}
             icon={kpi.icon}
             tone={kpi.tone}
+            iconVariant="solid"
           />
         ))}
       </div>
@@ -488,7 +502,7 @@ function DemandManagementPage() {
       {/* Row 1: Pipeline donut · Capacity gauge · Demand vs Capacity trend */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {/* Demand Pipeline */}
-        <PanelCard title="Demand Pipeline" subtitle="(Next 90 Days)">
+        <PanelCard title="Demand Pipeline" subtitle="(Next 90 Days)" className="flex flex-col" bodyClassName="flex flex-1 flex-col">
           <div className="flex items-center gap-2">
             <div className="relative h-[160px] w-[160px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -520,11 +534,11 @@ function DemandManagementPage() {
               ))}
             </ul>
           </div>
-          <PanelFooterLink label="View Demand Pipeline" onClick={() => setActiveTab('pipeline')} />
+          <PanelFooterLink label="View Demand Pipeline" onClick={() => setActiveTab('pipeline')} pushBottom />
         </PanelCard>
 
         {/* Capacity Overview */}
-        <PanelCard title="Capacity Overview" subtitle="(Next 90 Days)">
+        <PanelCard title="Capacity Overview" subtitle="(Next 90 Days)" className="flex flex-col" bodyClassName="flex flex-1 flex-col">
           <div className="flex flex-col items-center">
             <div className="w-full max-w-[240px]">
               <GaugeComponent
@@ -533,7 +547,7 @@ function DemandManagementPage() {
                 minValue={0}
                 maxValue={100}
                 arc={{
-                  width: 0.25,
+                  width: 0.4,
                   padding: 0.01,
                   cornerRadius: 2,
                   subArcs: [
@@ -564,11 +578,11 @@ function DemandManagementPage() {
               </li>
             ))}
           </ul>
-          <PanelFooterLink label="View Capacity Overview" onClick={() => setOpenDialog('capacity')} />
+          <PanelFooterLink label="View Capacity Overview" onClick={() => setOpenDialog('capacity')} pushBottom />
         </PanelCard>
 
         {/* Demand vs Capacity Trend */}
-        <PanelCard title="Demand vs Capacity Trend">
+        <PanelCard title="Demand vs Capacity Trend" className="flex flex-col" bodyClassName="flex flex-1 flex-col">
           <ChartWrapper height={190} noCard noPadding>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={TREND} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
@@ -582,7 +596,7 @@ function DemandManagementPage() {
               </LineChart>
             </ResponsiveContainer>
           </ChartWrapper>
-          <PanelFooterLink label="View Full Forecast" onClick={() => setOpenDialog('forecast')} />
+          <PanelFooterLink label="View Full Forecast" onClick={() => setOpenDialog('forecast')} pushBottom />
         </PanelCard>
       </div>
 
@@ -594,7 +608,7 @@ function DemandManagementPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={PORTFOLIO} layout="vertical" margin={{ top: 4, right: 40, left: 20, bottom: 4 }}>
                 <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} width={110} />
+                <YAxis type="category" dataKey="name" tick={<PortfolioAxisTick />} axisLine={false} tickLine={false} width={110} />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f1f5f9' }} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16} isAnimationActive={false}>
                   {PORTFOLIO.map((d) => (
@@ -627,7 +641,9 @@ function DemandManagementPage() {
                     </td>
                     <td className="py-2 pr-2 text-slate-600 whitespace-nowrap">{r.goLive}</td>
                     <td className="py-2 pr-2">
-                      <Badge variant={RISK_VARIANT[r.risk]} size="sm">{r.risk}</Badge>
+                      <span className={cn('inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-semibold text-white', RISK_PILL[r.risk])}>
+                        {r.risk}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -753,7 +769,7 @@ function DemandManagementPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={PORTFOLIO} layout="vertical" margin={{ top: 4, right: 40, left: 20, bottom: 4 }}>
                   <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} width={140} />
+                  <YAxis type="category" dataKey="name" tick={<PortfolioAxisTick />} axisLine={false} tickLine={false} width={140} />
                   <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16} isAnimationActive={false}>
                     {PORTFOLIO.map((d) => <Cell key={d.name} fill={d.color} />)}

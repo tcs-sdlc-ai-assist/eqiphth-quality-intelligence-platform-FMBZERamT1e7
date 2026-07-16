@@ -18,11 +18,11 @@ import {
   Star,
   ChevronDown,
   ChevronRight,
-  ChevronLeft,
   LifeBuoy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { ROUTES } from '@/lib/constants';
 
 /**
@@ -64,23 +64,27 @@ const FAVORITED_SUITES = [
  */
 function NavRow({ label, to, icon: Icon, active, onNavigate, collapsed }) {
   return (
-    <button
-      type="button"
-      onClick={() => onNavigate(to)}
-      title={collapsed ? label : undefined}
-      aria-label={collapsed ? label : undefined}
-      className={cn(
-        'group relative flex w-full items-center gap-2.5 rounded-lg py-2 text-left text-sm transition-colors',
-        collapsed ? 'justify-center px-2' : 'pl-4 pr-3',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
-        active ? 'bg-humana-green-500/15 font-medium text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-      )}
-      aria-current={active ? 'page' : undefined}
-    >
-      {active ? <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-humana-green-400" aria-hidden="true" /> : null}
-      <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-humana-green-400' : 'text-slate-400 group-hover:text-slate-200')} aria-hidden="true" />
-      {!collapsed ? <span className="truncate">{label}</span> : null}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => onNavigate(to)}
+          aria-label={label}
+          className={cn(
+            'group relative flex w-full items-center gap-2.5 rounded-lg py-2 text-left text-sm transition-colors',
+            collapsed ? 'justify-center px-2' : 'pl-4 pr-3',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
+            active ? 'bg-humana-green-500/15 font-medium text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+          )}
+          aria-current={active ? 'page' : undefined}
+        >
+          {active ? <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-humana-green-400" aria-hidden="true" /> : null}
+          <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-humana-green-400' : 'text-slate-400 group-hover:text-slate-200')} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">{label}</span> : null}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -128,21 +132,6 @@ const HTHSidebarNav = forwardRef(function HTHSidebarNav({ className, collapsed =
       aria-label="Humana Test Harness navigation"
       {...props}
     >
-      <button
-        type="button"
-        onClick={() => handleNavigate(ROUTES.DASHBOARD)}
-        title={collapsed ? 'Back to EQIP' : undefined}
-        aria-label={collapsed ? 'Back to EQIP' : undefined}
-        className={cn(
-          'mb-1 flex w-full items-center gap-2 rounded-lg py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-white',
-          collapsed ? 'justify-center px-2' : 'px-4'
-        )}
-      >
-        <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
-        {!collapsed ? 'Back to EQIP' : null}
-      </button>
-      <div className={cn('mb-1 border-t border-white/10', collapsed ? 'mx-1' : '')} aria-hidden="true" />
-
       <NavRow label="HTH Home" to={ROUTES.HTH} icon={Home} active={isActive(ROUTES.HTH)} onNavigate={handleNavigate} collapsed={collapsed} />
 
       {!collapsed ? <div className="mt-3 px-4 text-2xs font-semibold uppercase tracking-wider text-slate-500">Analytics</div> : <div className="mt-3 mx-1 border-t border-white/10" aria-hidden="true" />}

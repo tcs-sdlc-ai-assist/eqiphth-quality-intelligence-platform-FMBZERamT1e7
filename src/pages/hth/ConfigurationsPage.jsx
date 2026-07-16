@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Settings, Save } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { usePersona } from '@/context/PersonaContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { PermissionGate } from '@/components/shared/PermissionGate';
+import { PageActions } from '@/components/layout/PageActions';
 import { Switch } from '@/components/ui/Switch';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -62,6 +63,8 @@ function ConfigurationsPage() {
 
   const canEdit = hasPermission(PERMISSIONS.EDIT_QUALITY_GATES);
 
+  usePageHeader({ title: 'Configurations', subtitle: `Test type, quality gate, and execution defaults for the Humana Test Harness.` });
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -79,20 +82,12 @@ function ConfigurationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-humana-green-50 text-humana-green-600">
-            <Settings className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Configurations</h1>
-            <p className="text-sm text-slate-500">Test type, quality gate, and execution defaults for the Humana Test Harness.</p>
-          </div>
-        </div>
+      {/* Save Changes — portalled into the navbar (left of the bell) */}
+      <PageActions>
         <PermissionGate requiredAction={PERMISSIONS.EDIT_QUALITY_GATES} behavior="hidden">
           <Button variant="primary" size="sm" iconLeft={<Save className="h-3.5 w-3.5" />} onClick={handleSave}>Save Changes</Button>
         </PermissionGate>
-      </div>
+      </PageActions>
 
       {!canEdit ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-500">

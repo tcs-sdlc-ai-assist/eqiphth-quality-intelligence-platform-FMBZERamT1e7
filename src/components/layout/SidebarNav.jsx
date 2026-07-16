@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNavigation } from '@/context/NavigationContext';
 import { usePersona } from '@/context/PersonaContext';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { ROUTES, PERMISSIONS } from '@/lib/constants';
 
 /**
@@ -168,24 +169,27 @@ const SidebarNav = forwardRef(function SidebarNav({ className, collapsed = false
         if (!item.children) {
           const active = isLeafActive(item.to);
           return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => handleNavigate(item.to)}
-              title={collapsed ? item.label : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              className={cn(
-                'group relative flex w-full items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors',
-                collapsed ? 'justify-center px-2' : 'px-3',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
-                active ? 'bg-humana-green-500/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-              )}
-              aria-current={active ? 'page' : undefined}
-            >
-              {active ? <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-humana-green-400" aria-hidden="true" /> : null}
-              <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-humana-green-400' : 'text-slate-400 group-hover:text-slate-200')} aria-hidden="true" />
-              {!collapsed ? <span className="truncate">{item.label}</span> : null}
-            </button>
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate(item.to)}
+                  aria-label={item.label}
+                  className={cn(
+                    'group relative flex w-full items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors',
+                    collapsed ? 'justify-center px-2' : 'px-3',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400/70',
+                    active ? 'bg-humana-green-500/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  )}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {active ? <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-humana-green-400" aria-hidden="true" /> : null}
+                  <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-humana-green-400' : 'text-slate-400 group-hover:text-slate-200')} aria-hidden="true" />
+                  {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{item.label}</TooltipContent>
+            </Tooltip>
           );
         }
 

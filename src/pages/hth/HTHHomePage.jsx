@@ -9,9 +9,10 @@ import {
   Gauge,
   RefreshCw,
   ArrowRight,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { PanelCard } from '@/components/shared/PanelCard';
@@ -118,11 +119,18 @@ const FILTERS = [
 function FilterSelect({ label, options }) {
   const [value, setValue] = useState(options[0]);
   return (
-    <label className="flex flex-1 flex-col gap-1 min-w-[150px]">
-      <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
-      <select value={value} onChange={(e) => setValue(e.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40">
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
+    <label className="flex flex-1 min-w-[180px] flex-col gap-0.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-card transition-colors focus-within:border-humana-green-500 focus-within:ring-2 focus-within:ring-humana-green-500/30">
+      <span className="text-2xs font-medium text-slate-400">{label}</span>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full appearance-none bg-transparent pr-6 text-sm font-semibold text-slate-800 focus:outline-none"
+        >
+          {options.map((o) => <option key={o}>{o}</option>)}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+      </div>
     </label>
   );
 }
@@ -138,6 +146,8 @@ function HTHHomePage() {
   const { toast } = useToast();
   const [logTab, setLogTab] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
+
+  usePageHeader({ title: 'Humana Test Harness (HTH)', subtitle: `Unified orchestration and execution across environments, pipelines and tools.` });
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -164,17 +174,11 @@ function HTHHomePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Humana Test Harness (HTH)</h1>
-        <p className="text-sm text-slate-500">Unified orchestration and execution across environments, pipelines and tools.</p>
-      </div>
-
       {/* Filter row */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-card">
+      <div className="flex flex-wrap items-stretch gap-3">
         {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
-        <button type="button" onClick={handleRefresh} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
-          <RefreshCw className={cn('h-4 w-4 text-slate-400', refreshing && 'animate-spin')} aria-hidden="true" /> Refresh
+        <button type="button" onClick={handleRefresh} title="Refresh" aria-label="Refresh" className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-700 shadow-card hover:bg-slate-50">
+          <RefreshCw className={cn('h-4 w-4 text-slate-400', refreshing && 'animate-spin')} aria-hidden="true" />
         </button>
       </div>
 
@@ -188,7 +192,8 @@ function HTHHomePage() {
       {/* Row 1 */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {/* Test Executions Overview */}
-        <PanelCard title="Test Executions Overview">
+        <PanelCard title="Test Executions Overview" noBorder info="Outcome breakdown of all test executions in the selected window.">
+
           <div className="flex items-center gap-3">
             <div className="relative h-[150px] w-[150px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -216,37 +221,54 @@ function HTHHomePage() {
         </PanelCard>
 
         {/* Test Repository Summary */}
-        <PanelCard title="Test Repository Summary">
-          <div className="flex items-baseline justify-between">
-            <div>
+        <PanelCard title="Test Repository Summary" noBorder info="Total test cases split by manual vs automated, and by testing type.">
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            {/* Left: total + manual/automated split (center aligned) */}
+            <div className="text-center sm:w-[42%] sm:shrink-0">
               <p className="text-2xs uppercase tracking-wider text-slate-400">Total Test Cases</p>
-              <p className="text-2xl font-semibold text-slate-900">58,742</p>
+              <p className="text-2xl font-bold text-slate-900">58,742</p>
+              <div className="mt-10 flex flex-col gap-2">
+                <div className="rounded-lg border border-slate-200 px-3 py-1.5 text-center">
+                  <p className="text-sm font-semibold text-slate-900">28,246</p>
+                  <p className="text-2xs text-slate-400">Manual 48.1%</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 px-3 py-1.5 text-center">
+                  <p className="text-sm font-semibold text-slate-900">30,496</p>
+                  <p className="text-2xs text-slate-400">Automated 51.9%</p>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <div className="rounded-lg border border-slate-200 px-3 py-1.5 text-center">
-                <p className="text-sm font-semibold text-slate-900">28,246</p>
-                <p className="text-2xs text-slate-400">Manual 48.1%</p>
+            {/* Right: by testing type — small donut above the legend */}
+            <div className="flex-1">
+              <p className="mb-2 text-center text-2xs font-medium uppercase tracking-wider text-slate-400">By Testing Type</p>
+              <div className="relative mx-auto h-14 w-14">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={TESTING_TYPES} dataKey="pct" nameKey="name" cx="50%" cy="50%" innerRadius={9} outerRadius={18} paddingAngle={2} stroke="none" isAnimationActive={false}>
+                      {TESTING_TYPES.map((t) => <Cell key={t.name} fill={t.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v, n) => [`${v}%`, n]} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <div className="rounded-lg border border-slate-200 px-3 py-1.5 text-center">
-                <p className="text-sm font-semibold text-slate-900">30,496</p>
-                <p className="text-2xs text-slate-400">Automated 51.9%</p>
-              </div>
+              <ul className="mt-3 flex flex-col gap-1">
+                {TESTING_TYPES.map((t) => (
+                  <li key={t.name} className="flex items-center gap-2 text-2xs">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
+                    <span className="flex-1 truncate text-slate-600">{t.name}</span>
+                    <span className="text-slate-500">{t.pct}%</span>
+                    <span className="tabular-nums text-slate-400">({t.count})</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          <ul className="mt-4 flex flex-col gap-1.5">
-            {TESTING_TYPES.map((t) => (
-              <li key={t.name} className="flex items-center gap-2 text-xs">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
-                <span className="w-24 shrink-0 text-slate-600">{t.name}</span>
-                <span className="text-slate-400">{t.pct}%</span>
-                <span className="ml-auto tabular-nums text-slate-500">{t.count}</span>
-              </li>
-            ))}
-          </ul>
         </PanelCard>
 
         {/* Upcoming Production Deployments */}
-        <PanelCard title="Upcoming Production Deployments">
+        <PanelCard title="Upcoming Production Deployments" noBorder info="Scheduled production releases with their assessed risk and status.">
+
           <div className="-mx-1 overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
@@ -278,7 +300,8 @@ function HTHHomePage() {
       {/* Row 2 */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {/* Top Risks */}
-        <PanelCard title="Top Risks">
+        <PanelCard title="Top Risks" noBorder info="Highest-impact quality risks currently tracked across applications.">
+
           <ul className="flex flex-col divide-y divide-slate-100">
             {TOP_RISKS.map((r) => (
               <li key={r.risk} className="flex items-start justify-between gap-3 py-2 first:pt-0">
@@ -293,7 +316,8 @@ function HTHHomePage() {
         </PanelCard>
 
         {/* Environment Health */}
-        <PanelCard title="Environment Health">
+        <PanelCard title="Environment Health" noBorder info="Current health and open-issue count for each test environment.">
+
           <ul className="flex flex-col divide-y divide-slate-100">
             {ENVIRONMENTS.map((e) => (
               <li key={e.name} className="flex items-center justify-between gap-3 py-2 first:pt-0">
@@ -311,7 +335,8 @@ function HTHHomePage() {
         </PanelCard>
 
         {/* Recent Test Executions */}
-        <PanelCard title="Recent Test Executions">
+        <PanelCard title="Recent Test Executions" noBorder info="The latest test runs with environment, timing, and outcome.">
+
           <ul className="flex flex-col divide-y divide-slate-100">
             {RECENT_EXEC.map((e) => (
               <li key={e.name} className="flex items-center justify-between gap-3 py-2 first:pt-0">
@@ -327,7 +352,8 @@ function HTHHomePage() {
       </div>
 
       {/* EQE Log */}
-      <PanelCard title="EQE Log">
+      <PanelCard title="EQE Log" noBorder info="Chronological feed of automation, data, execution, and governance events.">
+
         <div className="-mt-1 mb-3 flex flex-wrap gap-1 border-b border-slate-100 pb-2">
           {EQE_TABS.map((t) => (
             <button
@@ -358,7 +384,7 @@ function HTHHomePage() {
               {logRows.map((r) => (
                 <tr key={r.event} className="border-t border-slate-100">
                   <td className="py-2 pr-3 whitespace-nowrap text-slate-500">{r.time}</td>
-                  <td className="py-2 pr-3"><Badge variant={EQE_CAT_COLOR[r.category] || 'neutral'} size="sm">{r.category}</Badge></td>
+                  <td className="py-2 pr-3"><Badge variant={EQE_CAT_COLOR[r.category] || 'neutral'} size="sm" className="w-40">{r.category}</Badge></td>
                   <td className="py-2 pr-3 font-medium text-slate-800">{r.event}</td>
                   <td className="py-2 pr-3 text-slate-500">{r.details}</td>
                   <td className="py-2 text-slate-500">{r.source}</td>

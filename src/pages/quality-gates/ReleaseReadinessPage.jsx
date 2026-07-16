@@ -7,16 +7,23 @@ import {
   AlertTriangle,
   XCircle,
   Circle,
+  Rocket,
+  CalendarX,
+  ClipboardCheck,
+  Bug,
+  ShieldCheck,
+  Code2,
 } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
-import { KpiCard } from '@/components/shared/KpiCard';
 import { DataTable } from '@/components/shared/DataTable';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { RingGauge } from '@/components/shared/RingGauge';
+import { PageActions } from '@/components/layout/PageActions';
+import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { ROUTES, DATE_FORMATS } from '@/lib/constants';
 
 // ---------------------------------------------------------------------------
@@ -93,7 +100,7 @@ function SecurityScanCell({ security }) {
       <div className="flex flex-col gap-0.5">
         {(security.tools || []).map((tool) => (
           <span key={tool} className="flex items-center gap-1 text-2xs text-success-700">
-            <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" /> {tool}
+            <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" /> {tool}
           </span>
         ))}
         <span className="text-2xs font-medium text-success-600">Passed</span>
@@ -103,18 +110,18 @@ function SecurityScanCell({ security }) {
 
   if (security.state === 'partial') {
     return (
-      <div className="flex flex-col gap-0.5">
-        <span className="flex items-center gap-1 text-xs font-medium text-warning-700">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> Partial
-        </span>
+      <div className="flex flex-col items-center gap-0.5 text-center">
+        <AlertTriangle className="h-6 w-6 shrink-0 text-warning-500" strokeWidth={2.5} aria-hidden="true" />
+        <span className="text-xs font-semibold text-warning-700">Partial</span>
         <span className="text-2xs text-danger-600">{security.criticalCount} Critical</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1 text-xs text-slate-400">
-      <XCircle className="h-3.5 w-3.5 shrink-0 text-danger-400" aria-hidden="true" /> Not Completed
+    <div className="flex flex-col items-center gap-0.5 text-center">
+      <XCircle className="h-6 w-6 shrink-0 text-danger-400" strokeWidth={2.5} aria-hidden="true" />
+      <span className="text-2xs text-slate-400">Not Completed</span>
     </div>
   );
 }
@@ -130,6 +137,8 @@ function ReleaseReadinessPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  usePageHeader({ title: 'Release Readiness', subtitle: `Assess release quality and readiness across Humana applications.` });
 
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ application: '', itsmStatus: '', qaManual: '', securityScan: '' });
@@ -175,12 +184,12 @@ function ReleaseReadinessPage() {
     const pct = (n) => `${Math.round((n / total) * 1000) / 10}%`;
 
     return [
-      { id: 'total', label: 'Total Releases', value: total, alert: false },
-      { id: 'no_event', label: 'No Release', description: 'Releases with no scheduled release event', value: noReleaseEvent, changeText: pct(noReleaseEvent), alert: true },
-      { id: 'no_qa', label: 'No QA Testing', description: 'Releases with no QA test cases executed', value: noQaTesting, changeText: pct(noQaTesting), alert: true },
-      { id: 'open_defects', label: 'Open Defects', description: 'Releases with at least one open defect', value: withOpenDefects, changeText: pct(withOpenDefects), alert: true },
-      { id: 'no_security', label: 'No Security', description: 'Releases with no completed security scan', value: noSecurity, changeText: pct(noSecurity), alert: true },
-      { id: 'no_unit', label: 'No Unit Tests', description: 'Releases with 0% unit test coverage', value: noUnitTests, changeText: pct(noUnitTests), alert: true },
+      { id: 'total', label: 'Total Releases', value: total, alert: false, icon: <Rocket />, iconClass: 'bg-info-500' },
+      { id: 'no_event', label: 'Releases With No Release Event', value: noReleaseEvent, changeText: pct(noReleaseEvent), alert: true, icon: <CalendarX />, iconClass: 'bg-slate-400' },
+      { id: 'no_qa', label: 'Releases With No QA Testing', value: noQaTesting, changeText: pct(noQaTesting), alert: true, icon: <ClipboardCheck />, iconClass: 'bg-humana-green-500' },
+      { id: 'open_defects', label: 'Releases With Open Defects', value: withOpenDefects, changeText: pct(withOpenDefects), alert: true, icon: <Bug />, iconClass: 'bg-warning-500' },
+      { id: 'no_security', label: 'Releases With No Security Testing', value: noSecurity, changeText: pct(noSecurity), alert: true, icon: <ShieldCheck />, iconClass: 'bg-violet-500' },
+      { id: 'no_unit', label: 'Releases With No Unit Tests', value: noUnitTests, changeText: pct(noUnitTests), alert: true, icon: <Code2 />, iconClass: 'bg-cyan-500' },
     ];
   }, []);
 
@@ -199,26 +208,34 @@ function ReleaseReadinessPage() {
       {
         id: 'actions',
         header: '',
-        size: 70,
+        size: 44,
+        meta: { width: '3.5%' },
         enableSorting: false,
         enableHiding: false,
         cell: ({ row }) => (
-          <button type="button" onClick={() => handleReleaseClick(row.original.id)} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label={`View ${row.original.eventName}`}>
-            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+          <button type="button" onClick={() => handleReleaseClick(row.original.id)} className="rounded p-1 text-slate-900 hover:bg-slate-100 hover:text-humana-green-600" aria-label={`View ${row.original.eventName}`}>
+            <Eye className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
           </button>
         ),
       },
-      { accessorKey: 'crq', header: 'CRQ #', size: 150 },
+      {
+        accessorKey: 'crq',
+        header: 'CRQ #',
+        size: 130,
+        meta: { width: '9.5%' },
+        cell: ({ row }) => <span className="text-xs tabular-nums text-slate-600 break-all">{row.original.crq}</span>,
+      },
       {
         accessorKey: 'eventCode',
         header: 'Release Event',
         size: 190,
+        meta: { width: '14%' },
         cell: ({ row }) => (
           <div className="flex flex-col gap-0.5">
-            <button type="button" onClick={() => handleReleaseClick(row.original.id)} className="text-left text-xs font-semibold text-humana-green-600 hover:text-humana-green-700 hover:underline">
+            <button type="button" onClick={() => handleReleaseClick(row.original.id)} className="text-left text-xs font-semibold text-humana-green-600 hover:text-humana-green-700 hover:underline break-all">
               {row.original.eventCode}
             </button>
-            <span className="text-sm text-slate-700">{row.original.eventName}</span>
+            <span className="text-xs text-slate-700">{row.original.eventName}</span>
             <span className="text-2xs text-slate-400">{formatDate(row.original.startDate)}</span>
           </div>
         ),
@@ -226,11 +243,12 @@ function ReleaseReadinessPage() {
       {
         accessorKey: 'applications',
         header: 'Applications',
-        size: 150,
+        size: 108,
+        meta: { width: '8.5%' },
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
             {row.original.applications.map((app) => (
-              <Badge key={app} variant="info" size="sm">{app}</Badge>
+              <Badge key={app} variant="info" size="sm" className="max-w-full whitespace-normal text-center leading-tight">{app}</Badge>
             ))}
           </div>
         ),
@@ -238,22 +256,25 @@ function ReleaseReadinessPage() {
       {
         accessorKey: 'startDate',
         header: 'Start Date',
-        size: 100,
-        cell: ({ row }) => <span className="text-sm text-slate-600">{formatDate(row.original.startDate, DATE_FORMATS.SHORT)}</span>,
+        size: 92,
+        meta: { width: '7%' },
+        cell: ({ row }) => <span className="text-xs text-slate-600">{formatDate(row.original.startDate, DATE_FORMATS.SHORT)}</span>,
       },
       {
         accessorKey: 'status',
         header: 'Status',
-        size: 150,
+        size: 108,
+        meta: { width: '8.5%' },
         cell: ({ row }) => {
           const meta = STATUS_META[row.original.status];
-          return <Badge variant={meta.variant} size="sm" className="uppercase tracking-wide">{meta.label}</Badge>;
+          return <Badge variant={meta.variant} size="sm" className="max-w-full uppercase tracking-wide whitespace-normal text-center leading-tight">{meta.label}</Badge>;
         },
       },
       {
         id: 'qaManual',
         header: 'QA Manual Testing',
         size: 150,
+        meta: { width: '12%' },
         enableSorting: false,
         cell: ({ row }) => {
           const qa = row.original.qaManual;
@@ -272,7 +293,8 @@ function ReleaseReadinessPage() {
       {
         id: 'qaAutomation',
         header: 'QA Automation Testing',
-        size: 150,
+        size: 158,
+        meta: { width: '12.5%' },
         enableSorting: false,
         cell: ({ row }) => {
           const qa = row.original.qaAutomation;
@@ -291,7 +313,8 @@ function ReleaseReadinessPage() {
       {
         id: 'defects',
         header: 'Defects',
-        size: 100,
+        size: 92,
+        meta: { width: '6.5%' },
         enableSorting: false,
         cell: ({ row }) => {
           const d = row.original.defects;
@@ -307,14 +330,16 @@ function ReleaseReadinessPage() {
       {
         id: 'security',
         header: 'Security Scan',
-        size: 130,
+        size: 120,
+        meta: { width: '8%' },
         enableSorting: false,
         cell: ({ row }) => <SecurityScanCell security={row.original.security} />,
       },
       {
         id: 'coverage',
         header: 'Unit Test Coverage',
-        size: 150,
+        size: 148,
+        meta: { width: '10%' },
         enableSorting: false,
         cell: ({ row }) => {
           const c = row.original.coverage;
@@ -335,18 +360,12 @@ function ReleaseReadinessPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Release Readiness</h1>
-          <p className="text-sm text-slate-500">Assess release quality and readiness across Humana applications.</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" iconLeft={<RefreshCw className={loading ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />} onClick={handleRefresh}>
-            Recalculate Scores
-          </Button>
-        </div>
-      </div>
+      {/* Recalculate — portalled into the navbar (far right) */}
+      <PageActions>
+        <Button variant="outline" size="sm" iconLeft={<RefreshCw className={loading ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />} onClick={handleRefresh}>
+          Recalculate Scores
+        </Button>
+      </PageActions>
 
       {/* Filters */}
       <FilterBar fields={filterFields} values={filters} onChange={setFilters} liveMode showApplyButton={false} showResetButton showActiveFilters />
@@ -354,14 +373,29 @@ function ReleaseReadinessPage() {
       {/* KPI Section */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {kpis.map((kpi) => (
-          <div key={kpi.id} className="relative">
-            <KpiCard label={kpi.label} value={kpi.value} unit="count" description={kpi.description} changeText={kpi.changeText} changeTone="muted" />
+          <Card key={kpi.id} className="relative flex h-full flex-col p-4">
             {kpi.alert ? (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-2xs font-bold text-white ring-2 ring-white" aria-hidden="true">
+              <span className="absolute right-3 top-3 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-2xs font-bold text-white" aria-hidden="true">
                 !
               </span>
             ) : null}
-          </div>
+            <div className="flex items-center gap-3">
+              <span
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white [&_svg]:h-5 [&_svg]:w-5',
+                  kpi.iconClass
+                )}
+                aria-hidden="true"
+              >
+                {kpi.icon}
+              </span>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-slate-900">{kpi.value}</span>
+                {kpi.changeText ? <span className="text-sm text-slate-400">({kpi.changeText})</span> : null}
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-slate-500">{kpi.label}</p>
+          </Card>
         ))}
       </div>
 
@@ -370,6 +404,10 @@ function ReleaseReadinessPage() {
         columns={columns}
         data={releases}
         enableExport
+        enableDensityToggle
+        searchAlign="right"
+        tableClassName="table-fixed [&_th]:px-2.5 [&_td]:px-2.5 [&_td]:align-top"
+        headClassName="normal-case font-bold text-slate-900 whitespace-normal align-bottom"
         pageSize={10}
         searchPlaceholder="Search releases, CRQs, applications..."
         exportFilename="release-readiness"

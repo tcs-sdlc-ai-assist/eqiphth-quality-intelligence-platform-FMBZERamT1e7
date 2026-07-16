@@ -56,6 +56,21 @@ const toneMap = {
 };
 
 /**
+ * Solid-fill icon tones (colored circle + white glyph) for cards that pass
+ * iconVariant="solid" — matches the Demand Management mock.
+ * @type {Object<string, string>}
+ */
+const toneSolidMap = {
+  blue: 'bg-info-500 text-white',
+  green: 'bg-humana-green-500 text-white',
+  orange: 'bg-warning-500 text-white',
+  purple: 'bg-violet-500 text-white',
+  red: 'bg-danger-500 text-white',
+  cyan: 'bg-cyan-500 text-white',
+  slate: 'bg-slate-500 text-white',
+};
+
+/**
  * Derives a KPI icon tone from status (preferred) or trend, so every card gets
  * a themed circle even when the page doesn't pass an explicit tone.
  *
@@ -251,6 +266,7 @@ const KpiCard = forwardRef(function KpiCard(
     subtitle,
     icon,
     tone = 'blue',
+    iconVariant = 'soft',
     changeText,
     changeTone,
     changeLabel = 'vs prev',
@@ -265,6 +281,9 @@ const KpiCard = forwardRef(function KpiCard(
   const resolvedIcon = icon || deriveIcon(status, trend);
   const resolvedTone = icon ? tone : deriveTone(status, trend);
   const toneColors = toneMap[resolvedTone] || toneMap.blue;
+  const iconClasses = iconVariant === 'solid'
+    ? (toneSolidMap[resolvedTone] || toneSolidMap.blue)
+    : cn(toneColors.bg, toneColors.text);
   const resolvedTrend = trend || 'stable';
   const trendColors = trendColorMap[resolvedTrend] || trendColorMap.stable;
   const TrendIcon = getTrendIcon(resolvedTrend);
@@ -333,61 +352,83 @@ const KpiCard = forwardRef(function KpiCard(
 
   const formattedValue = getFormattedValue();
 
-  const cardContent = (
+  // Icon tile — larger, on the left of the card (matching the reference stat
+  // cards where the tinted icon sits beside a stacked label/value/change block).
+  const iconEl = (
+    <span
+      className={cn(
+        'flex shrink-0 items-center justify-center rounded-full',
+        'h-12 w-12 [&_svg]:h-6 [&_svg]:w-6',
+        iconClasses
+      )}
+      aria-hidden="true"
+    >
+      {resolvedIcon}
+    </span>
+  );
+
+  const labelEl = (
+    <div className="flex items-center gap-2 min-w-0">
+      {statusDotColor ? (
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', statusDotColor)} aria-hidden="true" />
+      ) : null}
+      <span className="text-sm font-medium text-slate-600 truncate">{label}</span>
+    </div>
+  );
+
+  const subtitleEl = subtitle ? (
+    <span className="text-2xs text-slate-400 truncate">{subtitle}</span>
+  ) : null;
+
+  const valueEl = (
+    <span className="text-2xl font-bold text-slate-900 tracking-tight truncate">{formattedValue}</span>
+  );
+
+  const changeEl = (
+    <div className="flex items-center gap-1.5">
+      <span className={cn('inline-flex items-center gap-0.5 text-xs font-semibold', changeColor, !changeText && 'capitalize')}>
+        {!isStatusText && DirArrow ? <DirArrow className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+        {changeBody}
+      </span>
+      {hasPct && changeLabel ? (
+        <span className="text-2xs text-slate-400">{changeLabel}</span>
+      ) : null}
+    </div>
+  );
+
+  const descriptionEl = description ? (
+    <p className="mt-1.5 text-2xs text-slate-400 line-clamp-2">{description}</p>
+  ) : null;
+
+  // Sparkline cards keep the stacked layout (icon+label on top, value, then the
+  // trend line). All other cards use the horizontal icon-left / text-right form.
+  const cardContent = showSparkline ? (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <span
-            className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full [&_svg]:h-4 [&_svg]:w-4',
-              toneColors.bg,
-              toneColors.text
-            )}
-            aria-hidden="true"
-          >
-            {resolvedIcon}
-          </span>
-          <div className="flex flex-col gap-0.5 min-w-0 pt-0.5">
-            <div className="flex items-center gap-2 min-w-0">
-              {statusDotColor ? (
-                <span
-                  className={cn('h-2 w-2 shrink-0 rounded-full', statusDotColor)}
-                  aria-hidden="true"
-                />
-              ) : null}
-              <span className="text-sm font-medium text-slate-600 truncate">{label}</span>
-            </div>
-            {subtitle ? (
-              <span className="text-2xs text-slate-400 truncate">{subtitle}</span>
-            ) : null}
-          </div>
+      <div className="flex items-center gap-3 min-w-0">
+        {iconEl}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {labelEl}
+          {subtitleEl}
+          {valueEl}
+          {changeEl}
         </div>
       </div>
-
-      <div className="mt-2 flex flex-col gap-0.5 min-w-0">
-        <span className="text-2xl font-bold text-slate-900 tracking-tight truncate">
-          {formattedValue}
-        </span>
-
-        <div className="flex items-center gap-1.5">
-          <span className={cn('inline-flex items-center gap-0.5 text-xs font-semibold', changeColor, !changeText && 'capitalize')}>
-            {!isStatusText && DirArrow ? <DirArrow className="h-3.5 w-3.5" aria-hidden="true" /> : null}
-            {changeBody}
-          </span>
-          {hasPct && changeLabel ? (
-            <span className="text-2xs text-slate-400">{changeLabel}</span>
-          ) : null}
-        </div>
-      </div>
-
-      {showSparkline && sparklineData && sparklineData.length >= 2 ? (
-        <Sparkline data={sparklineData} trend={resolvedTrend} className="mt-2" />
+      {sparklineData && sparklineData.length >= 2 ? (
+        <Sparkline data={sparklineData} trend={resolvedTrend} className="mt-3" />
       ) : null}
-
-      {description ? (
-        <p className="mt-1.5 text-2xs text-slate-400 line-clamp-2">{description}</p>
-      ) : null}
+      {descriptionEl}
     </>
+  ) : (
+    <div className="flex items-center gap-3.5 min-w-0">
+      {iconEl}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {labelEl}
+        {subtitleEl}
+        {valueEl}
+        {changeEl}
+        {descriptionEl}
+      </div>
+    </div>
   );
 
   if (isClickable) {
@@ -443,6 +484,7 @@ KpiCard.propTypes = {
   subtitle: PropTypes.string,
   icon: PropTypes.node,
   tone: PropTypes.oneOf(['blue', 'green', 'orange', 'purple', 'red', 'cyan', 'slate']),
+  iconVariant: PropTypes.oneOf(['soft', 'solid']),
   changeText: PropTypes.string,
   changeTone: PropTypes.oneOf(['danger', 'success', 'muted']),
   changeLabel: PropTypes.string,

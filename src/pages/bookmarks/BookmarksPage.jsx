@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bookmark, ArrowRight, X, Plus } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { usePersona } from '@/context/PersonaContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
@@ -46,6 +46,11 @@ function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState(() => (currentPersona.navConfig?.pinnedItems || []).filter((k) => BOOKMARKABLE_PAGES[k]));
   const [addKey, setAddKey] = useState('');
 
+  usePageHeader({
+    title: 'Bookmarks',
+    subtitle: `${currentPersona.name}'s saved views, pinned for quick access.`,
+  });
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -69,16 +74,6 @@ function BookmarksPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-humana-green-50 text-humana-green-600">
-          <Bookmark className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Bookmarks</h1>
-          <p className="text-sm text-slate-500">{currentPersona.name}'s saved views, pinned for quick access.</p>
-        </div>
-      </div>
-
       <PanelCard title="Add a Bookmark">
         <div className="flex flex-wrap items-end gap-3">
           <Select

@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -1489,6 +1489,8 @@ function IntegrationManagementPage() {
     };
   }, [integrations]);
 
+  usePageHeader({ title: 'Integration Management', subtitle: `External tool connections, sync status, and configuration management for ${currentPersona.name}` });
+
   if (loading) {
     return <IntegrationManagementSkeleton />;
   }
@@ -1497,12 +1499,6 @@ function IntegrationManagementPage() {
     <div className="flex flex-col gap-6">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Integration Management</h1>
-          <p className="text-sm text-slate-500">
-            External tool connections, sync status, and configuration management for {currentPersona.name}
-          </p>
-        </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Button
             variant="outline"

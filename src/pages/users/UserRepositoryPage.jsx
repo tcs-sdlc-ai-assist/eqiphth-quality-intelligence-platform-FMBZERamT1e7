@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON, getInitials } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -932,6 +932,11 @@ function UserRepositoryPage() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
+  usePageHeader({
+    title: 'User Repository',
+    subtitle: `User directory with search, filters, and account management for ${currentPersona.name}`,
+  });
+
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('list');
@@ -1480,12 +1485,6 @@ function UserRepositoryPage() {
     <div className="flex flex-col gap-6">
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">User Repository</h1>
-          <p className="text-sm text-slate-500">
-            User directory with search, filters, and account management for {currentPersona.name}
-          </p>
-        </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"

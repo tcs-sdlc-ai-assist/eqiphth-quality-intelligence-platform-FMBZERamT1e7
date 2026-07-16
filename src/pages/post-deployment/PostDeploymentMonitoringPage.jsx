@@ -19,6 +19,8 @@ import {
   TrendingDown,
   Activity,
   CheckCircle,
+  CheckCircle2,
+  MessageSquare,
   XCircle,
   AlertTriangle,
   RefreshCw,
@@ -51,7 +53,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -77,6 +79,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { InsightBanner } from '@/components/shared/InsightBanner';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -1614,7 +1617,8 @@ function PostDeploymentMonitoringPage() {
         value: breachingMetrics,
         unit: 'count',
         trend: breachingMetrics > 5 ? 'declining' : 'stable',
-        status: breachingMetrics > 8 ? 'critical' : breachingMetrics > 3 ? 'at_risk' : 'on_track',
+        icon: <Activity />,
+        tone: 'red',
         description: 'Production health metrics in degraded or critical state.',
       },
       {
@@ -1623,7 +1627,8 @@ function PostDeploymentMonitoringPage() {
         value: successRate,
         unit: 'percent',
         trend: successRate >= 80 ? 'improving' : successRate >= 60 ? 'stable' : 'declining',
-        status: successRate >= 80 ? 'on_track' : successRate >= 60 ? 'at_risk' : 'critical',
+        icon: <CheckCircle2 />,
+        tone: 'green',
         description: 'Percentage of releases with successful outcomes.',
       },
       {
@@ -1632,7 +1637,8 @@ function PostDeploymentMonitoringPage() {
         value: openIncidents,
         unit: 'count',
         trend: openIncidents > 5 ? 'declining' : 'stable',
-        status: openIncidents > 8 ? 'critical' : openIncidents > 3 ? 'at_risk' : 'on_track',
+        icon: <AlertTriangle />,
+        tone: 'orange',
         description: 'Incidents currently open, investigating, or mitigated.',
       },
       {
@@ -1641,7 +1647,8 @@ function PostDeploymentMonitoringPage() {
         value: activeFeedback,
         unit: 'count',
         trend: 'stable',
-        status: activeFeedback > 8 ? 'at_risk' : 'on_track',
+        icon: <MessageSquare />,
+        tone: 'blue',
         description: 'Quality feedback loops requiring attention.',
       },
     ];
@@ -2124,57 +2131,61 @@ function PostDeploymentMonitoringPage() {
     [handleFeedbackClick]
   );
 
+  usePageHeader({ title: 'Post-Deployment Monitoring', subtitle: `Release quality outcomes, production health, incident correlations, and quality feedback loops for ${currentPersona.name}` });
+
   if (loading) {
     return <PostDeploymentMonitoringSkeleton />;
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Post-Deployment Monitoring</h1>
-          <p className="text-sm text-slate-500">
-            Release quality outcomes, production health, incident correlations, and quality feedback loops for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
+      {/* Refresh + Export — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh post-deployment data"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export post-deployment data"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -2198,7 +2209,8 @@ function PostDeploymentMonitoringPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}

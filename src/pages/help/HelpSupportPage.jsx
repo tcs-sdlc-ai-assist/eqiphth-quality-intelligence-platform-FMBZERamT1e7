@@ -9,7 +9,7 @@ import {
   Info,
   ChevronRight,
 } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
@@ -70,6 +70,11 @@ function HelpSupportPage() {
   const [activeTab, setActiveTab] = useState(() => HASH_TAB_MAP[location.hash] || 'documentation');
   const [form, setForm] = useState({ subject: '', priority: 'medium', description: '' });
 
+  usePageHeader({
+    title: 'Help & Support',
+    subtitle: `Documentation, shortcuts, release notes, and how to reach the EQIP support team.`,
+  });
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -93,16 +98,6 @@ function HelpSupportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-humana-green-50 text-humana-green-600">
-          <HelpCircle className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Help &amp; Support</h1>
-          <p className="text-sm text-slate-500">Documentation, shortcuts, release notes, and how to reach the EQIP support team.</p>
-        </div>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="documentation">Documentation</TabsTrigger>

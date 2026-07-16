@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { getAllDashboardMetrics } from '@/data/dashboardMetrics';
 import { getAllSegmentBreakdowns } from '@/data/dashboardMetrics';
 import { KpiCard } from '@/components/shared/KpiCard';
@@ -41,6 +41,8 @@ import { InsightBanner } from '@/components/shared/InsightBanner';
 import { StatusPill } from '@/components/shared/StatusPill';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PageActions } from '@/components/layout/PageActions';
+import { Tooltip as UiTooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Progress } from '@/components/ui/Progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
@@ -575,6 +577,8 @@ function DashboardPage() {
   const { currentPersona } = usePersona();
   const { setBreadcrumbs } = useNavigation();
 
+  usePageHeader({ title: 'Executive Dashboard', subtitle: `Enterprise-level quality metrics and performance overview for ${currentPersona.name}` });
+
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [selectedTrendMetric, setSelectedTrendMetric] = useState('trend_quality_score');
@@ -724,25 +728,22 @@ function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Executive Dashboard</h1>
-          <p className="text-sm text-slate-500">
-            Enterprise-level quality metrics and performance overview for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+      {/* Refresh — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UiTooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh dashboard"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UiTooltip>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (

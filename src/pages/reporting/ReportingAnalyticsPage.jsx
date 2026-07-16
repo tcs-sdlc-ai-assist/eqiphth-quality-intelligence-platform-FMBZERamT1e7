@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -79,6 +79,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { InsightBanner } from '@/components/shared/InsightBanner';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -962,11 +963,12 @@ function CategoryCardsPanel({ categories, reports, onCategoryClick }) {
                   <CategoryIcon
                     className="h-5 w-5"
                     style={{ color }}
+                    strokeWidth={2.5}
                     aria-hidden="true"
                   />
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <h3 className="text-sm font-semibold text-slate-900">{cat.name}</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{cat.name}</h3>
                   <span className="text-2xs text-slate-500">{cat.reportCount} reports</span>
                 </div>
               </div>
@@ -1034,13 +1036,14 @@ function ReportListPanel({ reports, onReportClick }) {
               <ChartIcon
                 className="h-5 w-5"
                 style={{ color: CATEGORY_COLORS[report.category] || '#64748b' }}
+                strokeWidth={2.5}
                 aria-hidden="true"
               />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <h3 className="text-sm font-semibold text-slate-900 line-clamp-1">{report.name}</h3>
+                  <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{report.name}</h3>
                   <p className="text-2xs text-slate-500 line-clamp-1">{report.description}</p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -1653,7 +1656,8 @@ function ReportingAnalyticsPage() {
         value: aggregates.totalReports,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <FileText />,
+        tone: 'blue',
         description: 'Total reports available in the catalog.',
       },
       {
@@ -1662,7 +1666,8 @@ function ReportingAnalyticsPage() {
         value: aggregates.totalCategories,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <Layers />,
+        tone: 'green',
         description: 'Number of report categories.',
       },
       {
@@ -1671,7 +1676,8 @@ function ReportingAnalyticsPage() {
         value: Object.keys(aggregates.chartTypeBreakdown || {}).length,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <PieChartIcon />,
+        tone: 'purple',
         description: 'Number of unique visualization types.',
       },
       {
@@ -1680,7 +1686,8 @@ function ReportingAnalyticsPage() {
         value: Object.keys(aggregates.ownerBreakdown || {}).length,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <User />,
+        tone: 'orange',
         description: 'Number of unique report owners.',
       },
     ];
@@ -1850,66 +1857,70 @@ function ReportingAnalyticsPage() {
     };
   }, [aggregates, reports]);
 
+  usePageHeader({ title: 'Reporting & Analytics', subtitle: `Report catalog, self-service builder, and data export for ${currentPersona.name}` });
+
   if (loading) {
     return <ReportingAnalyticsSkeleton />;
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Reporting & Analytics</h1>
-          <p className="text-sm text-slate-500">
-            Report catalog, self-service builder, and data export for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
+      {/* Actions — portalled into the navbar (Report Builder leftmost, then Refresh/Export left of the bell) */}
+      <PageActions>
+        <Button
+          variant="primary"
+          size="sm"
+          iconLeft={<Sparkles className="h-4 w-4" />}
+          onClick={() => setBuilderOpen(true)}
+        >
+          Report Builder
+        </Button>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export Catalog</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportAllCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportAllJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh reports"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <Button
-            variant="primary"
-            size="sm"
-            iconLeft={<Sparkles className="h-3.5 w-3.5" />}
-            onClick={() => setBuilderOpen(true)}
-          >
-            Report Builder
-          </Button>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export reports"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export Catalog</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportAllCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportAllJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -1933,7 +1944,8 @@ function ReportingAnalyticsPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}
@@ -2069,6 +2081,7 @@ function ReportingAnalyticsPage() {
                         <ChartIcon
                           className="h-4 w-4"
                           style={{ color: CATEGORY_COLORS[report.category] || '#64748b' }}
+                          strokeWidth={2.5}
                           aria-hidden="true"
                         />
                       </div>
@@ -2081,7 +2094,7 @@ function ReportingAnalyticsPage() {
                     </Badge>
                   </div>
 
-                  <p className="mt-2 text-sm font-medium text-slate-900 line-clamp-2">{report.name}</p>
+                  <p className="mt-2 text-sm font-bold text-slate-900 line-clamp-2">{report.name}</p>
                   <p className="mt-1 text-2xs text-slate-500 line-clamp-1">{report.description}</p>
 
                   <div className="mt-2.5 flex items-center justify-between">

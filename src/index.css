@@ -12,6 +12,14 @@
   html {
     @apply antialiased scroll-smooth;
     -webkit-tap-highlight-color: transparent;
+    /*
+     * Global UI scale. The entire app is built on Tailwind's rem-based scale
+     * (spacing, font sizes, icon sizes, widths), so shrinking the root font
+     * size uniformly scales the whole interface down to ~80% to match the
+     * reference density. Borders (px) stay crisp and breakpoints (px) stay
+     * stable, so nothing reflows. Tune this single value to adjust density.
+     */
+    font-size: 80%;
   }
 
   body {

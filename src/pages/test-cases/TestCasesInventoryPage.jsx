@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { RefreshCw, Columns3, Rows3, Download, Search } from 'lucide-react';
+import { RefreshCw, Columns3, Rows3, Download, Search, ChevronDown } from 'lucide-react';
 import { cn, downloadCSV } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import {
@@ -75,12 +75,50 @@ const FILTERS = [
 function FilterSelect({ label, options }) {
   const [value, setValue] = useState(options[0]);
   return (
-    <label className="flex flex-col gap-1 min-w-[150px]">
+    <label className="flex min-w-[180px] flex-1 flex-col gap-0.5 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-card transition-colors focus-within:border-humana-green-500 focus-within:ring-2 focus-within:ring-humana-green-500/30">
       <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
-      <select value={value} onChange={(e) => setValue(e.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40">
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
+      <div className="relative">
+        <select value={value} onChange={(e) => setValue(e.target.value)} className="w-full appearance-none bg-transparent pr-6 text-sm font-semibold text-slate-800 focus:outline-none">
+          {options.map((o) => <option key={o}>{o}</option>)}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+      </div>
     </label>
+  );
+}
+
+/**
+ * A separate bordered date filter box matching the mock's filter row.
+ *
+ * @param {object} props
+ * @param {string} props.label - Field label
+ * @param {string} props.defaultValue - Initial ISO date value
+ * @returns {React.ReactElement}
+ */
+function FilterDate({ label, defaultValue }) {
+  return (
+    <label className="flex min-w-[150px] flex-1 flex-col gap-0.5 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-card transition-colors focus-within:border-humana-green-500 focus-within:ring-2 focus-within:ring-humana-green-500/30">
+      <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
+      <input type="date" defaultValue={defaultValue} className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none" />
+    </label>
+  );
+}
+
+/**
+ * Inside-slice percentage label (white text) for the Tests By Application pie.
+ *
+ * @param {object} props - Recharts label props
+ * @returns {React.ReactElement}
+ */
+function PieSliceLabel({ cx, cy, midAngle, innerRadius, outerRadius, value }) {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.62;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+      {value}%
+    </text>
   );
 }
 
@@ -115,6 +153,8 @@ function AutoBar({ label, pct, color }) {
 function TestCasesInventoryPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
+
+  usePageHeader({ title: 'Test Cases', subtitle: `Comprehensive inventory and quality insights for test cases across the portfolio.` });
 
   const [metricView, setMetricView] = useState('Automation/Manual');
   const [gridTab, setGridTab] = useState('Testing Type');
@@ -175,18 +215,14 @@ function TestCasesInventoryPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Test Cases</h1>
-        <p className="text-sm text-slate-500">Comprehensive inventory and quality insights for test cases across the portfolio.</p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+      {/* Filters — each a separate bordered component */}
+      <div className="flex flex-wrap items-stretch gap-3">
         {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
-        <label className="flex flex-col gap-1"><span className="text-2xs font-medium uppercase tracking-wider text-slate-400">Start Date</span><input type="date" defaultValue="2026-01-18" className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" /></label>
-        <label className="flex flex-col gap-1"><span className="text-2xs font-medium uppercase tracking-wider text-slate-400">End Date</span><input type="date" defaultValue="2026-04-18" className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" /></label>
-        <button type="button" onClick={handleRefresh} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"><RefreshCw className={cn('h-4 w-4 text-slate-400', refreshing && 'animate-spin')} /> Refresh</button>
+        <FilterDate label="Start Date" defaultValue="2026-01-18" />
+        <FilterDate label="End Date" defaultValue="2026-04-18" />
+        <button type="button" onClick={handleRefresh} title="Refresh" aria-label="Refresh" className="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-700 shadow-card hover:bg-slate-50">
+          <RefreshCw className={cn('h-4 w-4 text-slate-500', refreshing && 'animate-spin')} aria-hidden="true" />
+        </button>
       </div>
 
       {/* Insight panels */}
@@ -195,6 +231,8 @@ function TestCasesInventoryPage() {
         <PanelCard
           title="General Metrics"
           className="xl:col-span-2"
+          noBorder
+          info="Total active test cases and their automation disposition."
           actions={
             <div className="flex gap-1">
               {['Automation/Manual', 'Smoke/Regression'].map((o) => (
@@ -219,7 +257,8 @@ function TestCasesInventoryPage() {
         </PanelCard>
 
         {/* Top 5 Testing Types */}
-        <PanelCard title="Top 5 Testing Types">
+        <PanelCard title="Top 5 Testing Types" noBorder info="The five most common testing types by test-case count.">
+
           <ul className="flex flex-col gap-2.5">
             {TOP_TYPES.map((t) => (
               <li key={t.name} className="text-xs">
@@ -231,7 +270,8 @@ function TestCasesInventoryPage() {
         </PanelCard>
 
         {/* Automation */}
-        <PanelCard title="Automation">
+        <PanelCard title="Automation" noBorder info="Test-bed and eligible automation coverage percentages.">
+
           <div className="flex flex-col gap-4">
             <AutoBar label="Test Bed Automation %" pct={57.3} color="#f59e0b" />
             <AutoBar label="Eligible Automation %" pct={68.86} color="#f59e0b" />
@@ -239,7 +279,8 @@ function TestCasesInventoryPage() {
         </PanelCard>
 
         {/* Manual v. Automation */}
-        <PanelCard title="Manual v. Automation">
+        <PanelCard title="Manual v. Automation" noBorder info="Share of test cases that are automated versus manual.">
+
           <div className="relative mx-auto h-[150px] w-[150px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -260,18 +301,23 @@ function TestCasesInventoryPage() {
 
       {/* Grid + Tests by Application */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        <PanelCard title="Testing Type" className="xl:col-span-3">
-          {/* Tabs */}
-          <div className="-mt-1 mb-3 flex flex-wrap gap-1 border-b border-slate-100 pb-2">
-            {GRID_TABS.map((t) => (
-              <button key={t} type="button" onClick={() => setGridTab(t)} className={cn('rounded-full px-2.5 py-1 text-2xs font-medium transition-colors', gridTab === t ? 'bg-humana-green-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}>{t}</button>
-            ))}
-          </div>
+        <PanelCard
+          title="Testing Type"
+          className="xl:col-span-3"
+          noBorder
+          actions={
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {GRID_TABS.map((t) => (
+                <button key={t} type="button" onClick={() => setGridTab(t)} className={cn('rounded-full px-3 py-1 text-xs font-semibold transition-colors', gridTab === t ? 'bg-humana-green-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100')}>{t}</button>
+              ))}
+            </div>
+          }
+        >
           {/* Toolbar */}
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
+                <button type="button" className="inline-flex items-center gap-1 text-xs font-bold text-info-700 hover:text-info-800"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
                 <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
@@ -285,7 +331,7 @@ function TestCasesInventoryPage() {
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+                <button type="button" className="inline-flex items-center gap-1 text-xs font-bold text-info-700 hover:text-info-800"><Rows3 className="h-3.5 w-3.5" /> Density</button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
                 <DropdownMenuLabel>Row density</DropdownMenuLabel>
@@ -294,35 +340,35 @@ function TestCasesInventoryPage() {
                 <DropdownMenuCheckboxItem checked={density === 'compact'} onCheckedChange={() => setDensity('compact')}>Compact</DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-medium text-info-600"><Download className="h-3.5 w-3.5" /> Export</button>
+            <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-bold text-info-700 hover:text-info-800"><Download className="h-3.5 w-3.5" /> Export</button>
             <span className="relative ml-auto">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="h-8 w-48 rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" />
             </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-xs">
+          <div>
+            <table className="w-full table-fixed text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-2xs uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2 font-medium">Application</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
-                  {visibleGridCols.map((c) => <th key={c.key} className="px-3 py-2 text-right font-medium">{c.label}</th>)}
+                  <th className="px-2 py-2 font-medium" style={{ width: '20%' }}>Application</th>
+                  <th className="px-2 py-2 text-right font-medium" style={{ width: '8%' }}>Total</th>
+                  {visibleGridCols.map((c) => <th key={c.key} className="px-2 py-2 text-right font-medium">{c.label}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {gridRows.map((r) => (
                   <tr key={r.app} className="border-b border-slate-100 hover:bg-slate-50/60">
-                    <td className={cn('px-3 whitespace-nowrap text-slate-700', cellPad)}>{r.app}</td>
-                    <td className={cn('px-3 text-right font-semibold text-slate-900', cellPad)}>{r.total.toLocaleString()}</td>
-                    {visibleGridCols.map((c) => <td key={c.key} className={cn('px-3 text-right text-slate-600', cellPad)}>{r[c.key].toLocaleString()}</td>)}
+                    <td className={cn('px-2 text-slate-700', cellPad)}>{r.app}</td>
+                    <td className={cn('px-2 text-right font-semibold text-slate-900', cellPad)}>{r.total.toLocaleString()}</td>
+                    {visibleGridCols.map((c) => <td key={c.key} className={cn('px-2 text-right text-slate-600', cellPad)}>{r[c.key].toLocaleString()}</td>)}
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-slate-50 text-xs font-semibold text-slate-900">
-                  <td className="px-3 py-2.5">Total Applications: 258</td>
-                  <td className="px-3 py-2.5 text-right">{totals.total.toLocaleString()}</td>
-                  {visibleGridCols.map((c) => <td key={c.key} className="px-3 py-2.5 text-right">{totals[c.key].toLocaleString()}</td>)}
+                  <td className="px-2 py-2.5">Total Applications: 258</td>
+                  <td className="px-2 py-2.5 text-right">{totals.total.toLocaleString()}</td>
+                  {visibleGridCols.map((c) => <td key={c.key} className="px-2 py-2.5 text-right">{totals[c.key].toLocaleString()}</td>)}
                 </tr>
               </tfoot>
             </table>
@@ -330,11 +376,11 @@ function TestCasesInventoryPage() {
         </PanelCard>
 
         {/* Tests by Application */}
-        <PanelCard title="Tests By Application">
-          <div className="relative mx-auto h-[160px] w-[160px]">
+        <PanelCard title="Tests By Application" noBorder info="Share of total test cases contributed by each application.">
+          <div className="relative mx-auto h-[170px] w-[170px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={APP_PIE} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={72} stroke="none" isAnimationActive={false}>
+                <Pie data={APP_PIE} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} stroke="#ffffff" strokeWidth={2} isAnimationActive={false} label={<PieSliceLabel />} labelLine={false}>
                   {APP_PIE.map((d) => <Cell key={d.name} fill={d.color} />)}
                 </Pie>
                 <Tooltip formatter={(v, n) => [`${v}%`, n]} />

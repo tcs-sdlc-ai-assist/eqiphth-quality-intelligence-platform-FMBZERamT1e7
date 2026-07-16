@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { DataTable } from '@/components/shared/DataTable';
@@ -33,6 +33,8 @@ function TriagePage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
   const [queue, setQueue] = useState(INITIAL_QUEUE);
+
+  usePageHeader({ title: 'Triage', subtitle: `Review newly reported defects and accept them into the backlog or reject duplicates.` });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -89,10 +91,6 @@ function TriagePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Triage</h1>
-        <p className="text-sm text-slate-500">Review newly reported defects and accept them into the backlog or reject duplicates.</p>
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Pending Triage" value={pending.length} unit="count" icon={<Clock />} tone="orange" />

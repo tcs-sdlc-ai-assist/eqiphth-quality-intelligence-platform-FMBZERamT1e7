@@ -13,7 +13,7 @@ import {
   Play,
 } from 'lucide-react';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { KpiCard } from '@/components/shared/KpiCard';
@@ -81,15 +81,10 @@ export function EnterpriseKnowledgeGraphPage() {
     });
   };
 
+  usePageHeader({ title: 'Enterprise Knowledge Graph', subtitle: `The connective tissue linking applications, requirements, test suites, and defects.` });
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-slate-900">Enterprise Knowledge Graph</h1>
-        <p className="text-sm text-slate-500">
-          The connective tissue linking applications, requirements, test suites, and defects.
-        </p>
-      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

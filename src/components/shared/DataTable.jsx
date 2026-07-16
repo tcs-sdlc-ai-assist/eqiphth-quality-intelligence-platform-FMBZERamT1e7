@@ -270,6 +270,9 @@ const DataTable = forwardRef(function DataTable(
     toolbarActions,
     className,
     tableClassName,
+    headClassName,
+    searchAlign = 'left',
+    maxHeight,
     ...props
   },
   ref
@@ -453,10 +456,16 @@ const DataTable = forwardRef(function DataTable(
     >
       {/* Toolbar */}
       {hasToolbar ? (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className={cn(
+          'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+          searchAlign === 'right' && 'sm:flex-row-reverse'
+        )}>
+          <div className={cn(
+            'flex items-center gap-2 min-w-0',
+            searchAlign === 'right' ? 'sm:w-72 sm:justify-end' : 'flex-1'
+          )}>
             {enableFiltering ? (
-              <div className="relative flex-1 max-w-sm">
+              <div className={cn('relative w-full', searchAlign === 'right' ? '' : 'flex-1 max-w-sm')}>
                 <Input
                   value={globalFilter ?? ''}
                   onChange={(e) => setGlobalFilter(e.target.value)}
@@ -487,15 +496,19 @@ const DataTable = forwardRef(function DataTable(
             ) : null}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className={cn(
+            'flex items-center gap-2 shrink-0',
+            searchAlign === 'right' && 'flex-1'
+          )}>
             {toolbarActions ? toolbarActions : null}
 
             {enableColumnVisibility ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant={searchAlign === 'right' ? 'ghost' : 'outline'}
                     size="sm"
+                    className={searchAlign === 'right' ? 'uppercase tracking-wide text-slate-600' : undefined}
                     iconLeft={<Columns3 className="h-3.5 w-3.5" />}
                   >
                     Columns
@@ -537,8 +550,9 @@ const DataTable = forwardRef(function DataTable(
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant={searchAlign === 'right' ? 'ghost' : 'outline'}
                     size="sm"
+                    className={searchAlign === 'right' ? 'uppercase tracking-wide text-slate-600' : undefined}
                     iconLeft={<Rows3 className="h-3.5 w-3.5" />}
                   >
                     Density
@@ -561,8 +575,9 @@ const DataTable = forwardRef(function DataTable(
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant={searchAlign === 'right' ? 'ghost' : 'outline'}
                     size="sm"
+                    className={searchAlign === 'right' ? 'uppercase tracking-wide text-slate-600' : undefined}
                     iconLeft={<Download className="h-3.5 w-3.5" />}
                   >
                     Export
@@ -604,7 +619,14 @@ const DataTable = forwardRef(function DataTable(
 
       {/* Table */}
       <div className="rounded-xl border border-slate-200 overflow-hidden">
-        <Table className={tableClassName}>
+        <Table
+          className={cn(
+            tableClassName,
+            maxHeight && '[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-slate-50'
+          )}
+          containerClassName={maxHeight ? 'overflow-y-auto overflow-x-hidden' : undefined}
+          containerStyle={maxHeight ? { maxHeight } : undefined}
+        >
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -616,12 +638,15 @@ const DataTable = forwardRef(function DataTable(
                     <TableHead
                       key={header.id}
                       style={
-                        header.column.columnDef.size
-                          ? { width: `${header.column.columnDef.size}px` }
-                          : undefined
+                        header.column.columnDef.meta?.width
+                          ? { width: header.column.columnDef.meta.width }
+                          : header.column.columnDef.size
+                            ? { width: `${header.column.columnDef.size}px` }
+                            : undefined
                       }
                       className={cn(
-                        canSort && 'cursor-pointer select-none'
+                        canSort && 'cursor-pointer select-none',
+                        headClassName
                       )}
                       onClick={
                         canSort
@@ -704,9 +729,11 @@ const DataTable = forwardRef(function DataTable(
                         key={cell.id}
                         className={density === 'compact' ? 'py-1.5' : undefined}
                         style={
-                          cell.column.columnDef.size
-                            ? { width: `${cell.column.columnDef.size}px` }
-                            : undefined
+                          cell.column.columnDef.meta?.width
+                            ? { width: cell.column.columnDef.meta.width }
+                            : cell.column.columnDef.size
+                              ? { width: `${cell.column.columnDef.size}px` }
+                              : undefined
                         }
                       >
                         {flexRender(
@@ -818,6 +845,9 @@ DataTable.propTypes = {
   toolbarActions: PropTypes.node,
   className: PropTypes.string,
   tableClassName: PropTypes.string,
+  headClassName: PropTypes.string,
+  searchAlign: PropTypes.oneOf(['left', 'right']),
+  maxHeight: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export { DataTable };

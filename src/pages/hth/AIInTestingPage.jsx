@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Bot, Code2, ScanSearch, ShieldCheck, Sparkles, Activity } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { Badge } from '@/components/ui/Badge';
@@ -35,6 +35,8 @@ const STATUS_VARIANT = { Success: 'success', Review: 'warning', 'New Finding': '
 function AIInTestingPage() {
   const { setBreadcrumbs } = useNavigation();
 
+  usePageHeader({ title: 'AI In Testing', subtitle: `AI agents accelerating test generation, execution, exploration, and critique across the portfolio.` });
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -47,10 +49,6 @@ function AIInTestingPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">AI In Testing</h1>
-        <p className="text-sm text-slate-500">AI agents accelerating test generation, execution, exploration, and critique across the portfolio.</p>
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Active Testing Agents" value={TESTING_AGENTS.length} unit="count" icon={<Bot />} tone="blue" />

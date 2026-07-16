@@ -18,11 +18,12 @@ import {
   XCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PageActions } from '@/components/layout/PageActions';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import {
@@ -104,20 +105,20 @@ const INITIATIVE_TYPES = ['Planning', 'Generation', 'Execution', 'Exploration', 
  */
 function AgentKpi({ kpi, onLink }) {
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-card">
-      <div className="flex items-start gap-3">
-        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5', TONE[kpi.tone])} aria-hidden="true">{kpi.icon}</span>
-        <span className="pt-0.5 text-sm font-medium text-slate-600">{kpi.label}</span>
+    <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+      <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full [&_svg]:h-6 [&_svg]:w-6', TONE[kpi.tone])} aria-hidden="true">{kpi.icon}</span>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="text-sm font-medium text-slate-600">{kpi.label}</span>
+        <p className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">{kpi.value}</p>
+        {kpi.change ? (
+          <p className={cn('mt-0.5 text-2xs font-semibold', kpi.up ? 'text-humana-green-600' : 'text-danger-600')}>{kpi.change}</p>
+        ) : (
+          <p className={cn('mt-0.5 text-2xs', kpi.id === 'hitl' ? 'text-warning-600' : 'text-slate-400')}>{kpi.note}</p>
+        )}
+        <button type="button" onClick={() => onLink(kpi)} className="mt-1.5 inline-flex items-center gap-1 text-2xs font-medium text-info-600 hover:text-info-700">
+          {kpi.link} <ArrowRight className="h-3 w-3" />
+        </button>
       </div>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{kpi.value}</p>
-      {kpi.change ? (
-        <p className={cn('mt-1 text-2xs font-medium', kpi.up ? 'text-humana-green-600' : 'text-danger-600')}>{kpi.change}</p>
-      ) : (
-        <p className={cn('mt-1 text-2xs', kpi.id === 'hitl' ? 'text-warning-600' : 'text-slate-400')}>{kpi.note}</p>
-      )}
-      <button type="button" onClick={() => onLink(kpi)} className="mt-3 inline-flex items-center gap-1 text-2xs font-medium text-info-600 hover:text-info-700">
-        {kpi.link} <ArrowRight className="h-3 w-3" />
-      </button>
     </div>
   );
 }
@@ -201,18 +202,16 @@ function AIAgentWorkforcePage() {
   const visibleActivity = showAllActivity ? ACTIVITY : ACTIVITY.slice(0, 5);
   const pendingHitl = hitlQueue.filter((h) => h.status === 'Pending').length;
 
+  usePageHeader({ title: 'AI Agent Workforce', subtitle: `Discover, monitor and manage AI agents that accelerate quality engineering across the SDLC.` });
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">AI Agent Workforce</h1>
-          <p className="text-sm text-slate-500">Discover, monitor and manage AI agents that accelerate quality engineering across the SDLC.</p>
-        </div>
+      {/* New Agent Initiative — portalled into the navbar (left of the bell) */}
+      <PageActions>
         <button type="button" onClick={() => setInitiativeOpen(true)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-navy-900 px-4 text-sm font-medium text-white hover:bg-navy-800">
           <Plus className="h-4 w-4" /> New Agent Initiative
         </button>
-      </div>
+      </PageActions>
 
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -236,18 +235,18 @@ function AIAgentWorkforcePage() {
           </div>
         }
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8">
           {filteredAgents.map((a) => (
-            <div key={a.name} className="flex flex-col rounded-xl border border-slate-200 p-4 transition-shadow hover:shadow-card-hover">
-              <span className={cn('flex h-12 w-12 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5', TONE[a.tone])} aria-hidden="true">{a.icon}</span>
-              <span className="mt-3 inline-flex items-center gap-1.5 text-2xs font-medium text-slate-500">
+            <div key={a.name} className="flex flex-col rounded-xl border border-slate-200 p-3 transition-shadow hover:shadow-card-hover">
+              <span className={cn('mx-auto flex h-12 w-12 items-center justify-center rounded-full [&_svg]:h-6 [&_svg]:w-6', TONE[a.tone])} aria-hidden="true">{a.icon}</span>
+              <span className="mt-2 flex items-center justify-center gap-1.5 text-2xs font-medium text-slate-500">
                 <span className={cn('h-2 w-2 rounded-full', STATUS_DOT[a.status])} /> {a.status}
               </span>
-              <h4 className="mt-1 text-sm font-semibold text-slate-900">{a.name}</h4>
+              <h4 className="mt-2 text-sm font-bold text-slate-900">{a.name}</h4>
               <p className="mt-1 flex-1 text-2xs leading-relaxed text-slate-500">{a.desc}</p>
               <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-2xs">
-                <div><p className="text-slate-400">Executions (Today)</p><p className="text-sm font-semibold text-slate-900">{a.exec}</p></div>
-                <div className="text-right"><p className="text-slate-400">Accuracy</p><p className="text-sm font-semibold text-slate-900">{a.acc}</p></div>
+                <div><p className="text-slate-400">Executions (Today)</p><p className="mt-1 text-sm font-bold text-slate-900">{a.exec}</p></div>
+                <div className="text-right"><p className="text-slate-400">Accuracy</p><p className="mt-1 text-sm font-bold text-slate-900">{a.acc}</p></div>
               </div>
               <button type="button" onClick={() => setDetailAgent(a)} className="mt-3 w-full rounded-lg border border-slate-200 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">View Details</button>
             </div>
@@ -257,7 +256,7 @@ function AIAgentWorkforcePage() {
 
         <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4">
           {[['Active', 'bg-humana-green-500'], ['Idle', 'bg-info-400'], ['Learning', 'bg-warning-500'], ['Disabled', 'bg-slate-400']].map(([label, dot]) => (
-            <span key={label} className="inline-flex items-center gap-1.5 text-2xs text-slate-500"><span className={cn('h-2 w-2 rounded-full', dot)} /> {label}</span>
+            <span key={label} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600"><span className={cn('h-2.5 w-2.5 rounded-full', dot)} /> {label}</span>
           ))}
           <button type="button" onClick={() => setManageOpen(true)} className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-humana-green-600 hover:text-humana-green-700">Manage Agents <ArrowRight className="h-4 w-4" /></button>
         </div>
@@ -281,7 +280,7 @@ function AIAgentWorkforcePage() {
                 <tr key={r.activity} className="border-b border-slate-100 hover:bg-slate-50/60">
                   <td className="px-3 py-3">
                     <span className="inline-flex items-center gap-2">
-                      <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg [&_svg]:h-3.5 [&_svg]:w-3.5', TONE[r.tone])}>{r.icon}</span>
+                      <span className={cn('flex h-9 w-9 items-center justify-center rounded-lg [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:[stroke-width:2.25px]', TONE[r.tone])}>{r.icon}</span>
                       <span className="font-medium text-slate-800">{r.agent}</span>
                     </span>
                   </td>

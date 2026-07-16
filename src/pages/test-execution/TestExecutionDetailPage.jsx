@@ -25,7 +25,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn, downloadCSV } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import {
   DropdownMenu,
@@ -138,6 +138,9 @@ function FilterSelect({ label, options }) {
 function TestExecutionDetailPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
+
+  usePageHeader({ title: 'Test Execution', subtitle: `View execution details, logs and results for your test suites.` });
+
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [starred, setStarred] = useState(false);
@@ -192,12 +195,6 @@ function TestExecutionDetailPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Test Execution</h1>
-        <p className="text-sm text-slate-500">View execution details, logs and results for your test suites.</p>
-      </div>
-
       {/* Filters */}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
         <div className="flex flex-wrap items-end gap-3">

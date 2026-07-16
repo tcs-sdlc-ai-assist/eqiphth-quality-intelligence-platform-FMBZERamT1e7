@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -66,6 +66,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { InsightBanner } from '@/components/shared/InsightBanner';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -939,6 +940,8 @@ function EnvironmentManagementPage() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
+  usePageHeader({ title: 'Environment Management', subtitle: `Environment inventory, health monitoring, reservations, and conflict detection for ${currentPersona.name}` });
+
   const [loading, setLoading] = useState(true);
   const [environments, setEnvironments] = useState([]);
   const [activeTab, setActiveTab] = useState('cards');
@@ -1133,7 +1136,8 @@ function EnvironmentManagementPage() {
         value: total,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <Server />,
+        tone: 'blue',
         description: 'Total environments in the inventory.',
       },
       {
@@ -1142,7 +1146,8 @@ function EnvironmentManagementPage() {
         value: available,
         unit: 'count',
         trend: available > 5 ? 'improving' : 'stable',
-        status: available > 3 ? 'on_track' : 'at_risk',
+        icon: <CheckCircle />,
+        tone: 'green',
         description: 'Environments available for use.',
       },
       {
@@ -1151,7 +1156,8 @@ function EnvironmentManagementPage() {
         value: avgHealth,
         unit: 'percent',
         trend: avgHealth >= 85 ? 'improving' : avgHealth >= 70 ? 'stable' : 'declining',
-        status: avgHealth >= 85 ? 'on_track' : avgHealth >= 70 ? 'at_risk' : 'critical',
+        icon: <Activity />,
+        tone: 'purple',
         description: 'Average health score across all environments.',
       },
       {
@@ -1160,7 +1166,8 @@ function EnvironmentManagementPage() {
         value: down + maintenance + withConflicts,
         unit: 'count',
         trend: (down + maintenance + withConflicts) > 3 ? 'declining' : 'stable',
-        status: (down + maintenance) > 2 ? 'critical' : (down + maintenance + withConflicts) > 3 ? 'at_risk' : 'on_track',
+        icon: <AlertTriangle />,
+        tone: 'red',
         description: 'Environments down, in maintenance, or with conflicts.',
       },
     ];
@@ -1414,51 +1421,53 @@ function EnvironmentManagementPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Environment Management</h1>
-          <p className="text-sm text-slate-500">
-            Environment inventory, health monitoring, reservations, and conflict detection for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
+      {/* Refresh + Export — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh environments"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export environments"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -1482,7 +1491,8 @@ function EnvironmentManagementPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}

@@ -7,6 +7,7 @@ import { TopHeader } from '@/components/layout/TopHeader';
 import { SidebarNav } from '@/components/layout/SidebarNav';
 import { SidebarCollapseToggle } from '@/components/layout/SidebarCollapseToggle';
 import { SidebarResizeHandle } from '@/components/layout/SidebarResizeHandle';
+import { SidebarLogoutButton } from '@/components/layout/SidebarLogoutButton';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { DESIGN_TOKENS } from '@/lib/constants';
 
@@ -75,7 +76,7 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
         <div className="relative flex shrink-0 flex-col items-start justify-center gap-1 border-b border-white/10 px-2 py-4">
           <Link
             to="/dashboard"
-            className="min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
+            className="block w-full min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-400"
             aria-label="EQIP Quality Platform — Go to dashboard"
           >
             <BrandLogo
@@ -99,21 +100,27 @@ const AppLayout = forwardRef(function AppLayout({ className, ...props }, ref) {
         <div
           className={cn(
             'shrink-0 border-t border-white/10 py-4',
-            sidebarCollapsed ? 'flex justify-center px-2' : 'px-5'
+            sidebarCollapsed ? 'flex flex-col items-center gap-2 px-2' : 'flex items-center justify-between gap-2 px-5'
           )}
         >
           {sidebarCollapsed ? (
-            <span className="text-base font-bold text-humana-green-400 leading-none" title="Humana. — Quality Without Compromise">
-              H.
-            </span>
+            <>
+              <span className="text-base font-bold text-humana-green-400 leading-none" title="Humana. — Quality Without Compromise">
+                H.
+              </span>
+              <SidebarLogoutButton />
+            </>
           ) : (
             <>
-              <p className="text-base font-bold text-humana-green-400 leading-none">
-                Humana.
-              </p>
-              <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">
-                Quality Without Compromise
-              </p>
+              <div>
+                <p className="text-base font-bold text-humana-green-400 leading-none">
+                  Humana.
+                </p>
+                <p className="mt-1 text-2xs uppercase tracking-wider text-slate-400">
+                  Quality Without Compromise
+                </p>
+              </div>
+              <SidebarLogoutButton />
             </>
           )}
         </div>

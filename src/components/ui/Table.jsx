@@ -12,9 +12,12 @@ import { cn } from '@/lib/utils';
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
-const Table = forwardRef(function Table({ className, children, ...props }, ref) {
+const Table = forwardRef(function Table(
+  { className, containerClassName, containerStyle, children, ...props },
+  ref
+) {
   return (
-    <div className="relative w-full overflow-auto">
+    <div className={cn('relative w-full overflow-auto', containerClassName)} style={containerStyle}>
       <table
         ref={ref}
         className={cn('w-full caption-bottom text-sm', className)}
@@ -30,6 +33,8 @@ Table.displayName = 'Table';
 
 Table.propTypes = {
   className: PropTypes.string,
+  containerClassName: PropTypes.string,
+  containerStyle: PropTypes.object,
   children: PropTypes.node,
 };
 

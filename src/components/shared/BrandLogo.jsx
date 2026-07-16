@@ -72,7 +72,7 @@ const BrandLogo = forwardRef(function BrandLogo(
   return (
     <span
       ref={ref}
-      className={cn('inline-flex flex-col items-start pl-4 text-left leading-none', className)}
+      className={cn('flex w-full min-w-0 flex-col items-start pl-4 text-left leading-none', className)}
       role="img"
       aria-label="EQIP Enterprise Quality Intelligence Platform"
       {...props}
@@ -84,12 +84,12 @@ const BrandLogo = forwardRef(function BrandLogo(
         style={{ height: markHeight, width: markWidth ?? markHeight * WORDMARK_ASPECT }}
       />
       {showCaption ? (
-        <span className={cn('mt-1.5 whitespace-nowrap text-[10px] font-medium leading-tight tracking-wide', captionColor)}>
+        <span className={cn('mt-1.5 block w-full truncate text-[9px] font-medium leading-tight tracking-wide', captionColor)}>
           Enterprise Quality Intelligence Platform
         </span>
       ) : null}
       {showCaption ? (
-        <span className={cn('mt-0.5 whitespace-nowrap text-[8px] font-medium leading-tight tracking-wide', captionColor)}>
+        <span className={cn('mt-0.5 block w-full truncate text-[8px] font-medium leading-tight tracking-wide', captionColor)}>
           AI-Powered Insights. | Intelligent Decisions. | Better Quality Outcomes.
         </span>
       ) : null}

@@ -33,12 +33,17 @@ import { load, save } from '@/lib/storage';
 
 const NavigationContext = createContext(null);
 
-/** Sidebar width bounds (px) for the drag-to-resize handle. */
-export const SIDEBAR_MIN_WIDTH = 200;
-export const SIDEBAR_MAX_WIDTH = 400;
-export const SIDEBAR_DEFAULT_WIDTH = 340;
+/*
+ * Sidebar width bounds (px) for the drag-to-resize handle. These are the one
+ * layout dimension not expressed in rem, so they don't shrink with the global
+ * 80% root-font scale (see index.css); they're set ~80% of their original
+ * values here to stay proportional to the scaled-down content.
+ */
+export const SIDEBAR_MIN_WIDTH = 176;
+export const SIDEBAR_MAX_WIDTH = 336;
+export const SIDEBAR_DEFAULT_WIDTH = 272;
 /** Fixed icon-only rail width (px) when the sidebar is collapsed. */
-export const SIDEBAR_COLLAPSED_WIDTH = 76;
+export const SIDEBAR_COLLAPSED_WIDTH = 64;
 
 /**
  * All possible navigation items in the platform matching the PRD workspaces.
@@ -286,10 +291,10 @@ function resolveInitialCollapsedState() {
  * @returns {number} The initial sidebar width in pixels
  */
 function resolveInitialSidebarWidth() {
-  const stored = load(STORAGE_KEYS.SIDEBAR_WIDTH, SIDEBAR_DEFAULT_WIDTH);
-  const width = Number(stored);
-  if (!Number.isFinite(width)) return SIDEBAR_DEFAULT_WIDTH;
-  return Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
+  // Always start at the default width on load/refresh. The drag-to-resize width
+  // applies for the current session only and intentionally does not persist, so
+  // a refresh always returns the sidebar to the same default size.
+  return SIDEBAR_DEFAULT_WIDTH;
 }
 
 /**
@@ -309,6 +314,13 @@ export function NavigationProvider({ children }) {
   const [breadcrumbs, setBreadcrumbsState] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsedState] = useState(resolveInitialCollapsedState);
   const [sidebarWidth, setSidebarWidthState] = useState(resolveInitialSidebarWidth);
+  // Current page's header (title + subtitle) surfaced in the TopHeader. Pages
+  // register this via the usePageHeader hook so the heading lives in the navbar
+  // rather than in the page body.
+  const [pageHeader, setPageHeaderState] = useState(null);
+  // DOM node for the TopHeader's page-actions slot; pages portal navbar-right
+  // controls into it via the PageActions component. Set by a callback ref.
+  const [pageActionsEl, setPageActionsEl] = useState(null);
 
   const activeRoute = useMemo(() => {
     return location.pathname || '/';
@@ -334,6 +346,10 @@ export function NavigationProvider({ children }) {
     const clamped = Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
     setSidebarWidthState(clamped);
     save(STORAGE_KEYS.SIDEBAR_WIDTH, clamped);
+  }, []);
+
+  const setPageHeader = useCallback((header) => {
+    setPageHeaderState(header);
   }, []);
 
   const setBreadcrumbs = useCallback((newBreadcrumbs) => {
@@ -430,12 +446,16 @@ export function NavigationProvider({ children }) {
       toggleSidebarCollapsed,
       sidebarWidth,
       setSidebarWidth,
+      pageHeader,
+      setPageHeader,
+      pageActionsEl,
+      setPageActionsEl,
       breadcrumbs,
       setBreadcrumbs,
       activeRoute,
       navigationItems,
     }),
-    [sidebarOpen, toggleSidebar, sidebarCollapsed, toggleSidebarCollapsed, sidebarWidth, setSidebarWidth, breadcrumbs, setBreadcrumbs, activeRoute, navigationItems]
+    [sidebarOpen, toggleSidebar, sidebarCollapsed, toggleSidebarCollapsed, sidebarWidth, setSidebarWidth, pageHeader, setPageHeader, pageActionsEl, setPageActionsEl, breadcrumbs, setBreadcrumbs, activeRoute, navigationItems]
   );
 
   return (
@@ -462,6 +482,21 @@ export function useNavigation() {
     throw new Error('useNavigation must be used within a NavigationProvider');
   }
   return context;
+}
+
+/**
+ * Registers the current page's heading (title + optional subtitle) so it is
+ * rendered in the TopHeader/navbar instead of the page body. The header is
+ * cleared automatically when the page unmounts.
+ *
+ * @param {{ title: string, subtitle?: string }} header - The page heading
+ */
+export function usePageHeader({ title, subtitle } = {}) {
+  const { setPageHeader } = useNavigation();
+  useEffect(() => {
+    setPageHeader({ title, subtitle });
+    return () => setPageHeader(null);
+  }, [title, subtitle, setPageHeader]);
 }
 
 export default NavigationContext;

@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -96,6 +96,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/Tooltip';
+import { PageActions } from '@/components/layout/PageActions';
 import { PERMISSIONS, ROUTES } from '@/lib/constants';
 
 const TYPE_COLORS = {
@@ -766,6 +767,8 @@ function TestDataManagementPage() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
+  usePageHeader({ title: 'Test Data Management', subtitle: `Test data assets, masking, provisioning, and lifecycle management for ${currentPersona.name}` });
+
   const [loading, setLoading] = useState(true);
   const [testDataAssets, setTestDataAssets] = useState([]);
   const [activeTab, setActiveTab] = useState('list');
@@ -1011,7 +1014,8 @@ function TestDataManagementPage() {
         value: total,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <HardDrive />,
+        tone: 'blue',
         description: 'Total test data assets in the inventory.',
       },
       {
@@ -1020,7 +1024,8 @@ function TestDataManagementPage() {
         value: active,
         unit: 'count',
         trend: 'improving',
-        status: 'on_track',
+        icon: <CheckCircle />,
+        tone: 'green',
         description: 'Test data assets in active status.',
       },
       {
@@ -1029,7 +1034,8 @@ function TestDataManagementPage() {
         value: stale + errors,
         unit: 'count',
         trend: (stale + errors) > 3 ? 'declining' : 'stable',
-        status: (stale + errors) > 5 ? 'at_risk' : 'on_track',
+        icon: <AlertTriangle />,
+        tone: 'red',
         description: 'Assets requiring attention (stale or error).',
       },
       {
@@ -1038,7 +1044,8 @@ function TestDataManagementPage() {
         value: maskingRate,
         unit: 'percent',
         trend: maskingRate >= 90 ? 'improving' : 'stable',
-        status: maskingRate >= 90 ? 'on_track' : maskingRate >= 75 ? 'at_risk' : 'critical',
+        icon: <ShieldCheck />,
+        tone: 'purple',
         description: 'Percentage of assets with proper PHI masking.',
       },
     ];
@@ -1280,51 +1287,53 @@ function TestDataManagementPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Test Data Management</h1>
-          <p className="text-sm text-slate-500">
-            Test data assets, masking, provisioning, and lifecycle management for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefreshPage}
-          >
-            Refresh
-          </Button>
+      {/* Refresh + Export — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefreshPage}
+              aria-label="Refresh test data"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export test data"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -1348,7 +1357,8 @@ function TestDataManagementPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}

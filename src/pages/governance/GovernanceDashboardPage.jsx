@@ -21,8 +21,10 @@ import {
 } from 'recharts';
 import {
   Shield,
+  ShieldCheck,
   Activity,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   AlertTriangle,
   RefreshCw,
@@ -54,7 +56,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -83,6 +85,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { InsightBanner } from '@/components/shared/InsightBanner';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -1366,6 +1369,8 @@ function GovernanceDashboardPage() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
+  usePageHeader({ title: 'Governance Dashboard', subtitle: `Compliance overview, procedure adherence, audit findings, and operating expectations for ${currentPersona.name}` });
+
   const [loading, setLoading] = useState(true);
   const [procedures, setProcedures] = useState([]);
   const [complianceScores, setComplianceScores] = useState([]);
@@ -1545,7 +1550,8 @@ function GovernanceDashboardPage() {
         value: aggregates.averageComplianceScore,
         unit: 'percent',
         trend: aggregates.averageComplianceScore >= 85 ? 'improving' : 'stable',
-        status: aggregates.averageComplianceScore >= 85 ? 'on_track' : aggregates.averageComplianceScore >= 75 ? 'at_risk' : 'critical',
+        icon: <ShieldCheck />,
+        tone: 'blue',
         description: 'Average compliance score across all frameworks.',
       },
       {
@@ -1554,7 +1560,8 @@ function GovernanceDashboardPage() {
         value: aggregates.openFindings,
         unit: 'count',
         trend: aggregates.openFindings > 5 ? 'declining' : 'stable',
-        status: aggregates.openFindings > 8 ? 'critical' : aggregates.openFindings > 3 ? 'at_risk' : 'on_track',
+        icon: <AlertTriangle />,
+        tone: 'red',
         description: 'Audit findings currently open or in progress.',
       },
       {
@@ -1563,7 +1570,8 @@ function GovernanceDashboardPage() {
         value: aggregates.adherenceMetMet,
         unit: 'count',
         trend: 'improving',
-        status: 'on_track',
+        icon: <CheckCircle2 />,
+        tone: 'green',
         description: 'Number of adherence metrics meeting targets.',
       },
       {
@@ -1572,7 +1580,8 @@ function GovernanceDashboardPage() {
         value: aggregates.compliantExpectations,
         unit: 'count',
         trend: aggregates.compliantExpectations >= aggregates.totalOperatingExpectations * 0.7 ? 'improving' : 'stable',
-        status: aggregates.nonCompliantExpectations > 3 ? 'at_risk' : 'on_track',
+        icon: <ClipboardCheck />,
+        tone: 'purple',
         description: 'Operating expectations in compliant status.',
       },
     ];
@@ -1929,51 +1938,53 @@ function GovernanceDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Governance Dashboard</h1>
-          <p className="text-sm text-slate-500">
-            Compliance overview, procedure adherence, audit findings, and operating expectations for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
+      {/* Refresh + Export — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh governance data"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export governance data"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -1997,7 +2008,8 @@ function GovernanceDashboardPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}

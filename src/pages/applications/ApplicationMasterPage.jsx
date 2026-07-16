@@ -20,7 +20,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { cn, downloadCSV } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { IntegrationLogo } from '@/components/shared/IntegrationLogo';
@@ -141,6 +141,9 @@ const CRIT_DOT = { High: 'bg-danger-500', Medium: 'bg-warning-500', Low: 'bg-suc
 const STAGE_VARIANT = { Production: 'success', UAT: 'info', Dev: 'neutral' };
 const PAGE_SIZE = 10;
 
+/** Deterministic dummy portrait per owner name (frontend-only mock). */
+const ownerPhoto = (name) => `https://i.pravatar.cc/96?u=${encodeURIComponent(name || 'owner')}`;
+
 /**
  * Circular quality-score badge — a colored ring around the numeric score.
  *
@@ -253,7 +256,7 @@ function ApplicationDetailDialog({ app, onOpenChange }) {
                 <span className="text-2xs font-medium text-slate-500">Environments</span>
               </div>
               <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 p-3">
-                <Avatar name={app.owner} size="sm" />
+                <Avatar name={app.owner} src={ownerPhoto(app.owner)} size="sm" />
                 <span className="mt-1 max-w-full truncate text-2xs font-medium text-slate-500">{app.owner}</span>
               </div>
             </div>
@@ -305,6 +308,11 @@ function ApplicationMasterPage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
   const location = useLocation();
+
+  usePageHeader({
+    title: 'Application Master',
+    subtitle: 'Single source of truth for all applications and related quality information.',
+  });
 
   const [apps, setApps] = useState(buildApplications);
   const [activeTab, setActiveTab] = useState(() => HASH_TAB_MAP[location.hash] || 'Applications');
@@ -414,12 +422,6 @@ function ApplicationMasterPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Application Master</h1>
-        <p className="text-sm text-slate-500">Single source of truth for all applications and related quality information.</p>
-      </div>
-
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {KPIS.map((k) => (
@@ -530,7 +532,7 @@ function ApplicationMasterPage() {
                       <td className="px-4 py-3 text-slate-600">{app.capability}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Avatar name={app.owner} size="sm" />
+                          <Avatar name={app.owner} src={ownerPhoto(app.owner)} size="sm" />
                           <span className="text-slate-700">{app.owner}</span>
                         </div>
                       </td>
@@ -716,7 +718,7 @@ function TabSummary({ tab, apps }) {
                 <tr key={owner} className="border-b border-slate-100 last:border-b-0">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <Avatar name={owner} size="sm" />
+                      <Avatar name={owner} src={ownerPhoto(owner)} size="sm" />
                       <span className="font-medium text-slate-800">{owner}</span>
                     </div>
                   </td>

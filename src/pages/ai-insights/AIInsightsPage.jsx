@@ -56,7 +56,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -88,6 +88,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { InsightBanner } from '@/components/shared/InsightBanner';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -1795,7 +1796,8 @@ function AIInsightsPage() {
         value: aggregates.activeModels,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <Cpu />,
+        tone: 'blue',
         description: `${aggregates.activeModels} of ${aggregates.totalModels} models active.`,
       },
       {
@@ -1804,7 +1806,8 @@ function AIInsightsPage() {
         value: aggregates.averageModelAccuracy,
         unit: 'percent',
         trend: aggregates.averageModelAccuracy >= 88 ? 'improving' : 'stable',
-        status: aggregates.averageModelAccuracy >= 85 ? 'on_track' : 'at_risk',
+        icon: <Target />,
+        tone: 'green',
         description: 'Average accuracy across all AI models.',
       },
       {
@@ -1813,7 +1816,8 @@ function AIInsightsPage() {
         value: aggregates.totalPredictions,
         unit: 'count',
         trend: 'improving',
-        status: 'on_track',
+        icon: <TrendingUp />,
+        tone: 'purple',
         description: `${aggregates.totalPredictions} predictions with ${aggregates.averagePredictionConfidence.toFixed(0)}% avg confidence.`,
       },
       {
@@ -1822,7 +1826,8 @@ function AIInsightsPage() {
         value: aggregates.totalRecommendations,
         unit: 'count',
         trend: 'improving',
-        status: 'on_track',
+        icon: <Lightbulb />,
+        tone: 'orange',
         description: `${aggregates.totalRecommendations} AI-generated recommendations.`,
       },
     ];
@@ -2266,57 +2271,61 @@ function AIInsightsPage() {
     [handleModelClick]
   );
 
+  usePageHeader({ title: 'AI Insights', subtitle: `Predictive intelligence, risk assessments, recommendations, and generative summaries for ${currentPersona.name}` });
+
   if (loading) {
     return <AIInsightsSkeleton />;
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">AI Insights</h1>
-          <p className="text-sm text-slate-500">
-            Predictive intelligence, risk assessments, recommendations, and generative summaries for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
+      {/* Refresh + Export — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh AI insights"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export AI insights"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -2340,7 +2349,8 @@ function AIInsightsPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}

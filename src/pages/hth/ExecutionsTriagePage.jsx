@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { XCircle, RefreshCw, Bug, CircleSlash } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { DataTable } from '@/components/shared/DataTable';
@@ -40,6 +40,8 @@ function ExecutionsTriagePage() {
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
   const [failures, setFailures] = useState(INITIAL_FAILURES);
+
+  usePageHeader({ title: 'Executions Triage', subtitle: `Classify failed test executions to separate real defects from flaky tests and environment issues.` });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -92,10 +94,6 @@ function ExecutionsTriagePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Executions Triage</h1>
-        <p className="text-sm text-slate-500">Classify failed test executions to separate real defects from flaky tests and environment issues.</p>
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Unclassified Failures" value={unclassified} unit="count" icon={<XCircle />} tone="red" />

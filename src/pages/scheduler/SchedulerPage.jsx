@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -67,6 +67,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -959,6 +960,8 @@ function SchedulerPage() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
+  usePageHeader({ title: 'Test Execution Scheduler', subtitle: `Manage test execution schedules, frequencies, and automation for ${currentPersona.name}` });
+
   const [loading, setLoading] = useState(true);
   const [schedulesData, setSchedulesData] = useState([]);
   const [activeTab, setActiveTab] = useState('list');
@@ -1310,7 +1313,8 @@ function SchedulerPage() {
         value: total,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <Calendar />,
+        tone: 'blue',
         description: 'Total configured test execution schedules.',
       },
       {
@@ -1319,7 +1323,8 @@ function SchedulerPage() {
         value: active,
         unit: 'count',
         trend: 'improving',
-        status: 'on_track',
+        icon: <CheckCircle />,
+        tone: 'green',
         description: 'Schedules currently active and running.',
       },
       {
@@ -1328,7 +1333,8 @@ function SchedulerPage() {
         value: paused,
         unit: 'count',
         trend: paused > 3 ? 'declining' : 'stable',
-        status: paused > 5 ? 'at_risk' : 'on_track',
+        icon: <Pause />,
+        tone: 'orange',
         description: 'Schedules temporarily paused.',
       },
       {
@@ -1337,7 +1343,8 @@ function SchedulerPage() {
         value: disabled,
         unit: 'count',
         trend: 'stable',
-        status: disabled > 3 ? 'at_risk' : 'on_track',
+        icon: <Ban />,
+        tone: 'red',
         description: 'Schedules that have been disabled.',
       },
     ];
@@ -1579,62 +1586,64 @@ function SchedulerPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Test Execution Scheduler</h1>
-          <p className="text-sm text-slate-500">
-            Manage test execution schedules, frequencies, and automation for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+      {/* Actions — portalled into the navbar (Create Schedule leftmost, then Refresh/Export left of the bell) */}
+      <PageActions>
+        <PermissionGate requiredAction={PERMISSIONS.EDIT_MEASURES} behavior="hidden">
           <Button
-            variant="outline"
+            variant="primary"
             size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
+            iconLeft={<Plus className="h-4 w-4" />}
+            onClick={handleCreateClick}
           >
-            Refresh
+            Create Schedule
           </Button>
+        </PermissionGate>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-
-          <PermissionGate requiredAction={PERMISSIONS.EDIT_MEASURES} behavior="hidden">
+        <UITooltip>
+          <TooltipTrigger asChild>
             <Button
-              variant="primary"
+              variant="outline"
               size="sm"
-              iconLeft={<Plus className="h-3.5 w-3.5" />}
-              onClick={handleCreateClick}
-            >
-              Create Schedule
-            </Button>
-          </PermissionGate>
-        </div>
-      </div>
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh schedules"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
+
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export schedules"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -1645,7 +1654,9 @@ function SchedulerPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
+            iconVariant="solid"
             description={kpi.description}
           />
         ))}

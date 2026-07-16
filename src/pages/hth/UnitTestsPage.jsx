@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CheckSquare, TrendingUp, FileCode, AlertTriangle } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { DataTable } from '@/components/shared/DataTable';
@@ -35,6 +35,8 @@ const APP_COVERAGE = [
  */
 function UnitTestsPage() {
   const { setBreadcrumbs } = useNavigation();
+
+  usePageHeader({ title: 'Unit Tests', subtitle: `Unit test volume, code coverage, and static analysis findings across the application portfolio.` });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -82,16 +84,12 @@ function UnitTestsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Unit Tests</h1>
-        <p className="text-sm text-slate-500">Unit test volume, code coverage, and static analysis findings across the application portfolio.</p>
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Total Unit Tests" value={totalUnitTests} unit="count" icon={<CheckSquare />} tone="blue" />
-        <KpiCard label="Avg. Overall Coverage" value={Number(avgCoverage)} unit="percent" icon={<TrendingUp />} tone="green" />
-        <KpiCard label="Applications Tracked" value={APP_COVERAGE.length} unit="count" icon={<FileCode />} tone="purple" />
-        <KpiCard label="Open SonarQube Bugs" value={totalBugs} unit="count" icon={<AlertTriangle />} tone="red" />
+        <KpiCard label="Total Unit Tests" value={totalUnitTests} unit="count" icon={<CheckSquare />} tone="blue" iconVariant="solid" />
+        <KpiCard label="Avg. Overall Coverage" value={Number(avgCoverage)} unit="percent" icon={<TrendingUp />} tone="green" iconVariant="solid" />
+        <KpiCard label="Applications Tracked" value={APP_COVERAGE.length} unit="count" icon={<FileCode />} tone="purple" iconVariant="solid" />
+        <KpiCard label="Open SonarQube Bugs" value={totalBugs} unit="count" icon={<AlertTriangle />} tone="red" iconVariant="solid" />
       </div>
 
       <PanelCard title="Coverage Trend" subtitle="Overall unit test coverage, last 6 months">

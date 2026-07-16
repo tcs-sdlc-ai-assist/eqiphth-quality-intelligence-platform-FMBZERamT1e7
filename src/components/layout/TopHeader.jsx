@@ -1,12 +1,11 @@
-import { forwardRef, useState, useCallback, useRef, useEffect } from 'react';
+import { forwardRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate, Link } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import {
-  Bell,
   HelpCircle,
-  Search,
   ChevronRight,
+  ChevronLeft,
   Menu,
   X,
   BookOpen,
@@ -14,7 +13,6 @@ import {
   ExternalLink,
   Keyboard,
   Info,
-  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
@@ -22,9 +20,6 @@ import { useNavigation } from '@/context/NavigationContext';
 import { useNotifications } from '@/context/NotificationContext';
 import { PersonaSwitcher } from '@/components/layout/PersonaSwitcher';
 import { NotificationBell } from '@/components/layout/NotificationBell';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { SearchInput } from '@/components/shared/SearchInput';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -190,71 +185,14 @@ HelpMenu.propTypes = {
  * @param {React.Ref} ref - Forwarded ref
  * @returns {React.ReactElement}
  */
-const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
-  const { currentPersona, logout } = usePersona();
-  const { breadcrumbs, toggleSidebar, sidebarOpen } = useNavigation();
+const TopHeader = forwardRef(function TopHeader({ className, showBackToEqip = false, ...props }, ref) {
+  const { currentPersona } = usePersona();
+  const { breadcrumbs, pageHeader, toggleSidebar, sidebarOpen, setPageActionsEl } = useNavigation();
   const { unreadCount } = useNotifications();
-  const navigate = useNavigate();
-
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchInputRef = useRef(null);
-
-  const handleToggleSearch = useCallback(() => {
-    setSearchOpen((prev) => {
-      const next = !prev;
-      if (next) {
-        setTimeout(() => {
-          if (searchInputRef.current) {
-            const input = searchInputRef.current.querySelector('input');
-            if (input) {
-              input.focus();
-            }
-          }
-        }, 0);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleCloseSearch = useCallback(() => {
-    setSearchOpen(false);
-  }, []);
-
-  const handleSearch = useCallback(
-    (query) => {
-      if (query && query.trim().length > 0) {
-        // Navigate to dashboard with search context (simulated)
-        navigate('/dashboard');
-      }
-    },
-    [navigate]
-  );
-
-
 
   const handleSidebarToggle = useCallback(() => {
     toggleSidebar();
   }, [toggleSidebar]);
-
-  const handleLogout = useCallback(() => {
-    logout();
-    navigate('/login');
-  }, [logout, navigate]);
-
-  useEffect(() => {
-    if (!searchOpen) return;
-
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') {
-        handleCloseSearch();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [searchOpen, handleCloseSearch]);
 
   return (
     <header
@@ -288,50 +226,41 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
             )}
           </button>
 
-          {/* Breadcrumbs */}
-          <Breadcrumbs items={breadcrumbs} />
+          {/* Back to EQIP (HTH module only) */}
+          {showBackToEqip ? (
+            <>
+              <Link
+                to={ROUTES.DASHBOARD}
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 transition-colors',
+                  'hover:bg-slate-100 hover:text-slate-700',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2'
+                )}
+              >
+                <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="hidden sm:inline">Back to EQIP</span>
+              </Link>
+              <div className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden="true" />
+            </>
+          ) : null}
+
+          {/* Page heading (title + subtitle) — falls back to breadcrumbs when unset */}
+          {pageHeader && pageHeader.title ? (
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-semibold leading-tight text-slate-900">{pageHeader.title}</h1>
+              {pageHeader.subtitle ? (
+                <p className="truncate text-xs leading-tight text-slate-500">{pageHeader.subtitle}</p>
+              ) : null}
+            </div>
+          ) : (
+            <Breadcrumbs items={breadcrumbs} />
+          )}
         </div>
 
-        {/* Right section: search, notifications, help, persona switcher */}
+        {/* Right section: page actions, notifications, help, profile */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Search - desktop */}
-          <div className="hidden md:block">
-            <SearchInput
-              placeholder="Search platform..."
-              size="sm"
-              debounceMs={400}
-              onSearch={handleSearch}
-              className="w-56 lg:w-64"
-              ariaLabel="Search the EQIP platform"
-            />
-          </div>
-
-          {/* Search toggle - mobile */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleToggleSearch}
-                className={cn(
-                  'inline-flex items-center justify-center rounded-lg p-2 text-slate-500 transition-colors duration-200 md:hidden',
-                  'hover:bg-slate-100 hover:text-slate-700',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2',
-                  searchOpen && 'bg-slate-100 text-slate-700'
-                )}
-                aria-label={searchOpen ? 'Close search' : 'Open search'}
-                aria-expanded={searchOpen}
-              >
-                {searchOpen ? (
-                  <X className="h-5 w-5" aria-hidden="true" />
-                ) : (
-                  <Search className="h-5 w-5" aria-hidden="true" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {searchOpen ? 'Close search' : 'Search'}
-            </TooltipContent>
-          </Tooltip>
+          {/* Page actions slot — pages portal navbar-right controls here (e.g. refresh, date filters) */}
+          <div ref={setPageActionsEl} className="flex items-center gap-2 empty:hidden" />
 
           {/* Notification bell */}
           <NotificationBell />
@@ -345,59 +274,10 @@ const TopHeader = forwardRef(function TopHeader({ className, ...props }, ref) {
             aria-hidden="true"
           />
 
-          {/* Persona switcher */}
-          <PersonaSwitcher
-            variant="compact"
-            className="hidden sm:block"
-          />
-          <PersonaSwitcher
-            variant="compact"
-            className="sm:hidden"
-          />
-
-          {/* Sign out */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className={cn(
-                  'inline-flex items-center justify-center rounded-lg p-2 text-slate-500 transition-colors duration-200',
-                  'hover:bg-danger-50 hover:text-danger-600',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-humana-green-500 focus-visible:ring-offset-2'
-                )}
-                aria-label="Sign out"
-              >
-                <LogOut className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Sign out</TooltipContent>
-          </Tooltip>
+          {/* Profile */}
+          <PersonaSwitcher variant="profile" />
         </div>
       </div>
-
-      {/* Mobile search overlay */}
-      {searchOpen ? (
-        <div
-          className={cn(
-            'absolute left-0 right-0 top-16 z-50 border-b border-slate-200 bg-white px-4 py-3 shadow-dropdown md:hidden',
-            'animate-slide-in-down'
-          )}
-          ref={searchInputRef}
-        >
-          <SearchInput
-            placeholder="Search platform..."
-            size="md"
-            debounceMs={400}
-            onSearch={(query) => {
-              handleSearch(query);
-              handleCloseSearch();
-            }}
-            autoFocus
-            ariaLabel="Search the EQIP platform"
-          />
-        </div>
-      ) : null}
     </header>
   );
 });
@@ -406,6 +286,7 @@ TopHeader.displayName = 'TopHeader';
 
 TopHeader.propTypes = {
   className: PropTypes.string,
+  showBackToEqip: PropTypes.bool,
 };
 
 export { TopHeader };

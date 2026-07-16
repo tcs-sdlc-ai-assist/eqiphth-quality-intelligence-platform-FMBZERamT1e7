@@ -9,9 +9,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { AlertCircle, Columns3, Rows3, Download, Search, Info } from 'lucide-react';
+import { AlertCircle, Columns3, Rows3, Download, Search, Info, ChevronDown } from 'lucide-react';
 import { cn, downloadCSV } from '@/lib/utils';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import {
@@ -94,11 +94,18 @@ const DEFECTS = [
 function FilterSelect({ label, options }) {
   const [value, setValue] = useState(options[0]);
   return (
-    <label className="flex flex-1 flex-col gap-1 min-w-[160px]">
-      <span className="text-2xs font-medium uppercase tracking-wider text-slate-400">{label}</span>
-      <select value={value} onChange={(e) => setValue(e.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40">
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
+    <label className="flex flex-1 min-w-[180px] flex-col gap-0.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-card transition-colors focus-within:border-humana-green-500 focus-within:ring-2 focus-within:ring-humana-green-500/30">
+      <span className="text-2xs font-medium text-slate-400">{label}</span>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full appearance-none bg-transparent pr-6 text-sm font-semibold text-slate-800 focus:outline-none"
+        >
+          {options.map((o) => <option key={o}>{o}</option>)}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+      </div>
     </label>
   );
 }
@@ -151,6 +158,8 @@ function InSprintViewPage() {
   const [hiddenCols, setHiddenCols] = useState(() => new Set());
   const [density, setDensity] = useState('comfortable');
 
+  usePageHeader({ title: 'In-Sprint View', subtitle: `Real-time quality insights for the current sprint.` });
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -191,21 +200,15 @@ function InSprintViewPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">In-Sprint View</h1>
-        <p className="text-sm text-slate-500">Real-time quality insights for the current sprint.</p>
-      </div>
-
       {/* Filter row */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-card">
+      <div className="flex flex-wrap items-stretch gap-3">
         {FILTERS.map((f) => <FilterSelect key={f.label} label={f.label} options={f.options} />)}
       </div>
 
       {/* Metrics row */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         {/* Story Metrics */}
-        <PanelCard title="Story Metrics" actions={<Toggle options={['Stories', 'Jira Tickets']} value={storyView} onChange={setStoryView} />}>
+        <PanelCard title="Story Metrics" noBorder info="Sprint stories broken down by their test coverage — automated, manual, or none." actions={<Toggle options={['Stories', 'Jira Tickets']} value={storyView} onChange={setStoryView} />}>
           <div className="grid grid-cols-2 gap-3">
             {STORY_TILES.map((t) => (
               <div key={t.label} className="rounded-lg border border-slate-200 p-3">
@@ -235,7 +238,7 @@ function InSprintViewPage() {
         </PanelCard>
 
         {/* Test Case Metrics */}
-        <PanelCard title="Test Case Metrics" actions={<Toggle options={['Tests In Sprint', 'Automation', 'Jira Trends']} value={testView} onChange={setTestView} />}>
+        <PanelCard title="Test Case Metrics" noBorder info="Unique test cases linked to sprint stories, split by automation status." actions={<Toggle options={['Tests In Sprint', 'Automation', 'Jira Trends']} value={testView} onChange={setTestView} />}>
           <p className="text-2xl font-semibold text-slate-900">2,193</p>
           <p className="text-2xs uppercase tracking-wider text-slate-400">Unique Linked Tests</p>
           <div className="mt-3 flex h-2.5 overflow-hidden rounded-full">
@@ -243,21 +246,30 @@ function InSprintViewPage() {
               <div key={s.label} style={{ width: `${(s.value / testTotal) * 100}%`, backgroundColor: s.color }} />
             ))}
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          {/* Color legend — what each color represents */}
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
             {TEST_SEG.map((s) => (
-              <div key={s.label} className="rounded-lg border border-slate-200 p-2.5">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-semibold text-slate-900">{s.value.toLocaleString()}</span>
-                  <span className="text-2xs text-slate-400">{s.pct}</span>
-                </div>
-                <p className="text-2xs text-slate-500">{s.label}</p>
+              <span key={s.label} className="inline-flex items-center gap-1.5 text-2xs text-slate-600">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} /> {s.label} ({s.value.toLocaleString()})
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {TEST_SEG.map((s) => (
+              <div key={s.label} className="rounded-lg border border-slate-200 p-2 text-center">
+                <p className="text-base font-bold text-slate-900">{s.value.toLocaleString()}</p>
+                <p className="text-2xs text-slate-400">{s.pct}</p>
+                <p className="mt-0.5 text-2xs leading-tight text-slate-500">{s.label}</p>
               </div>
             ))}
           </div>
+          <p className="mt-5 text-xs leading-relaxed text-slate-500">
+            <span className="font-bold text-slate-900">Note:</span> The above data shows all test cases linked to stories in the select sprint, and their current automation status.
+          </p>
         </PanelCard>
 
         {/* Jira Trends */}
-        <PanelCard title="Jira Trends" actions={<Toggle options={['In-Sprint Automation', 'Test Cases', 'Stories']} value={trendView} onChange={setTrendView} />}>
+        <PanelCard title="Jira Trends" noBorder info="Automation coverage trend across recent program increments and sprints." actions={<Toggle options={['In-Sprint Automation', 'Test Cases', 'Stories']} value={trendView} onChange={setTrendView} />}>
           <div className="h-[180px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={JIRA_TREND} margin={{ top: 8, right: 12, left: -12, bottom: 4 }}>
@@ -275,29 +287,31 @@ function InSprintViewPage() {
       </div>
 
       {/* Defects grid */}
-      <PanelCard title="Defects">
-        {/* Tabs */}
-        <div className="-mt-1 mb-3 flex flex-wrap gap-1 border-b border-slate-100 pb-2">
-          {DEFECT_TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setDefectTab(t)}
-              className={cn(
-                'rounded-full px-2.5 py-1 text-2xs font-medium transition-colors',
-                defectTab === t ? 'bg-danger-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
+      <PanelCard
+        title="Defects"
+        actions={
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {DEFECT_TABS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setDefectTab(t)}
+                className={cn(
+                  'rounded-full px-3 py-1 text-xs font-bold transition-colors',
+                  defectTab === t ? 'bg-danger-500 text-white' : 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-100'
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        }
+      >
         {/* Toolbar */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
+              <button type="button" className="inline-flex items-center gap-1 text-xs font-bold text-info-700 hover:text-info-800"><Columns3 className="h-3.5 w-3.5" /> Columns</button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
               <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
@@ -311,7 +325,7 @@ function InSprintViewPage() {
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Rows3 className="h-3.5 w-3.5" /> Density</button>
+              <button type="button" className="inline-flex items-center gap-1 text-xs font-bold text-info-700 hover:text-info-800"><Rows3 className="h-3.5 w-3.5" /> Density</button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
               <DropdownMenuLabel>Row density</DropdownMenuLabel>
@@ -320,7 +334,7 @@ function InSprintViewPage() {
               <DropdownMenuCheckboxItem checked={density === 'compact'} onCheckedChange={() => setDensity('compact')}>Compact</DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-medium text-info-600 hover:text-info-700"><Download className="h-3.5 w-3.5" /> Export</button>
+          <button type="button" onClick={handleExport} className="inline-flex items-center gap-1 text-xs font-bold text-info-700 hover:text-info-800"><Download className="h-3.5 w-3.5" /> Export</button>
           <span className="relative ml-auto">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search squads..." className="h-8 w-52 rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 focus:border-humana-green-500 focus:outline-none focus:ring-2 focus:ring-humana-green-500/40" />

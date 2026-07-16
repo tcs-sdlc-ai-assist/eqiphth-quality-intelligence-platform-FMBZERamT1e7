@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ListTodo, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { usePersona } from '@/context/PersonaContext';
 import { useToast } from '@/components/ui/Toast';
 import { KpiCard } from '@/components/shared/KpiCard';
@@ -38,6 +38,8 @@ function MyAssignmentsPage() {
   const { toast } = useToast();
   const [assignments, setAssignments] = useState(() => buildAssignments(currentPersona.name));
   const [typeTab, setTypeTab] = useState('All');
+
+  usePageHeader({ title: 'My Assignments', subtitle: `Defects, test cases, and executions assigned to ${currentPersona.name}.` });
 
   useEffect(() => {
     setBreadcrumbs([
@@ -92,10 +94,6 @@ function MyAssignmentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">My Assignments</h1>
-        <p className="text-sm text-slate-500">Defects, test cases, and executions assigned to {currentPersona.name}.</p>
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Open Assignments" value={open.length} unit="count" icon={<ListTodo />} tone="blue" />

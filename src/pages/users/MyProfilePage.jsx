@@ -11,9 +11,10 @@ import {
   Chrome,
 } from 'lucide-react';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
+import { PageActions } from '@/components/layout/PageActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
@@ -23,6 +24,11 @@ export function MyProfilePage() {
   const { currentPersona } = usePersona();
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
+
+  usePageHeader({
+    title: 'My Profile',
+    subtitle: `Manage your personal settings, notification rules, and workspace dashboard favorites.`,
+  });
 
   const [loading, setLoading] = useState(false);
   const [profileName, setProfileName] = useState(currentPersona.name || '');
@@ -55,20 +61,12 @@ export function MyProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">My Profile</h1>
-          <p className="text-sm text-slate-500">
-            Manage your personal settings, notification rules, and workspace dashboard favorites.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="primary" onClick={handleSave}>
-            Save Changes
-          </Button>
-        </div>
-      </div>
+      {/* Save Changes — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <Button variant="primary" size="sm" onClick={handleSave}>
+          Save Changes
+        </Button>
+      </PageActions>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Profile Card details */}

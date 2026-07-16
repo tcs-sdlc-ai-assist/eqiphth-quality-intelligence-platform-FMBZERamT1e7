@@ -14,6 +14,9 @@ import {
 } from 'recharts';
 import {
   Shield,
+  ShieldCheck,
+  CheckCircle2,
+  FileWarning,
   Activity,
   CheckCircle,
   XCircle,
@@ -42,7 +45,7 @@ import {
 } from 'lucide-react';
 import { cn, formatNumber, formatDate, downloadCSV, downloadJSON } from '@/lib/utils';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useAuditLog } from '@/context/AuditLogContext';
 import { useToast } from '@/components/ui/Toast';
 import {
@@ -63,6 +66,7 @@ import { DataTable } from '@/components/shared/DataTable';
 import { PermissionGate } from '@/components/shared/PermissionGate';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { InsightBanner } from '@/components/shared/InsightBanner';
+import { PageActions } from '@/components/layout/PageActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -932,6 +936,8 @@ function QualityGatesPage() {
   const { logEvent } = useAuditLog();
   const { toast } = useToast();
 
+  usePageHeader({ title: 'Quality Gates', subtitle: `Quality gate configurations, criteria monitoring, and waiver management for ${currentPersona.name}` });
+
   const [loading, setLoading] = useState(true);
   const [qualityGates, setQualityGates] = useState([]);
   const [activeTab, setActiveTab] = useState('list');
@@ -1116,7 +1122,8 @@ function QualityGatesPage() {
         value: total,
         unit: 'count',
         trend: 'stable',
-        status: 'on_track',
+        icon: <ShieldCheck />,
+        tone: 'blue',
         description: 'Total quality gates configured across all releases.',
       },
       {
@@ -1125,7 +1132,8 @@ function QualityGatesPage() {
         value: passRate,
         unit: 'percent',
         trend: passRate >= 70 ? 'improving' : passRate >= 50 ? 'stable' : 'declining',
-        status: passRate >= 80 ? 'on_track' : passRate >= 50 ? 'at_risk' : 'critical',
+        icon: <CheckCircle2 />,
+        tone: 'green',
         description: 'Percentage of quality gates that passed.',
       },
       {
@@ -1134,7 +1142,8 @@ function QualityGatesPage() {
         value: failed,
         unit: 'count',
         trend: failed > 5 ? 'declining' : 'stable',
-        status: failed > 8 ? 'critical' : failed > 3 ? 'at_risk' : 'on_track',
+        icon: <XCircle />,
+        tone: 'red',
         description: 'Number of quality gates that failed.',
       },
       {
@@ -1143,7 +1152,8 @@ function QualityGatesPage() {
         value: withWaivers,
         unit: 'count',
         trend: withWaivers > 5 ? 'declining' : 'stable',
-        status: withWaivers > 8 ? 'at_risk' : 'on_track',
+        icon: <FileWarning />,
+        tone: 'orange',
         description: 'Quality gates with active waivers.',
       },
     ];
@@ -1359,51 +1369,53 @@ function QualityGatesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">Quality Gates</h1>
-          <p className="text-sm text-slate-500">
-            Quality gate configurations, criteria monitoring, and waiver management for {currentPersona.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<RefreshCw className="h-3.5 w-3.5" />}
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
+      {/* Refresh + Export — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UITooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh quality gates"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh</TooltipContent>
+        </UITooltip>
 
-          <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  iconLeft={<Download className="h-3.5 w-3.5" />}
-                >
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuLabel>Export as</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportJSON}>
-                  <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                  JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </PermissionGate>
-        </div>
-      </div>
+        <PermissionGate requiredAction={PERMISSIONS.EXPORT_REPORTS} behavior="hidden">
+          <DropdownMenu>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    iconLeft={<Download className="h-4 w-4" />}
+                    aria-label="Export quality gates"
+                  />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Export</TooltipContent>
+            </UITooltip>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuLabel>Export as</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PermissionGate>
+      </PageActions>
 
       {/* AI Insight Banner */}
       {insightData ? (
@@ -1427,7 +1439,8 @@ function QualityGatesPage() {
             value={kpi.value}
             unit={kpi.unit}
             trend={kpi.trend}
-            status={kpi.status}
+            icon={kpi.icon}
+            tone={kpi.tone}
             description={kpi.description}
           />
         ))}

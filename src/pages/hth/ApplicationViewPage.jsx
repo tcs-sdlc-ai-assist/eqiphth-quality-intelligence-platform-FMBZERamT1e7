@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Gauge, CheckCircle2, Bug, Zap } from 'lucide-react';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { DataTable } from '@/components/shared/DataTable';
 import { StatusPill } from '@/components/shared/StatusPill';
+import { PageActions } from '@/components/layout/PageActions';
 import { Select } from '@/components/ui/Select';
 import { ROUTES } from '@/lib/constants';
 
@@ -60,6 +61,8 @@ function ApplicationViewPage() {
   const { setBreadcrumbs } = useNavigation();
   const [selectedApp, setSelectedApp] = useState(APP_NAMES[0]);
 
+  usePageHeader({ title: 'Application View', subtitle: `Testing snapshot for a single application — coverage, pass rate, defects, and recent executions.` });
+
   useEffect(() => {
     setBreadcrumbs([
       { label: 'Home', path: ROUTES.DASHBOARD },
@@ -86,18 +89,15 @@ function ApplicationViewPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Application View</h1>
-          <p className="text-sm text-slate-500">Testing snapshot for a single application — coverage, pass rate, defects, and recent executions.</p>
-        </div>
+      {/* Application selector — portalled into the navbar (left of the bell) */}
+      <PageActions>
         <Select
           value={selectedApp}
           onValueChange={setSelectedApp}
           options={APP_NAMES.map((n) => ({ value: n, label: n }))}
-          wrapperClassName="w-56"
+          wrapperClassName="w-52"
         />
-      </div>
+      </PageActions>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Test Coverage" value={snapshot.coverage} unit="percent" icon={<Gauge />} tone="blue" />
@@ -106,20 +106,20 @@ function ApplicationViewPage() {
         <KpiCard label="Automation Coverage" value={snapshot.automation} unit="percent" icon={<Zap />} tone="purple" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <PanelCard title="Test Type Split" subtitle={`${snapshot.executions.toLocaleString()} total executions`} className="xl:col-span-1">
-          <div className="flex items-center gap-3">
-            <div className="relative h-[150px] w-[150px] shrink-0">
+      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-3">
+        <PanelCard title="Test Type Split" subtitle={`${snapshot.executions.toLocaleString()} total executions`} className="xl:col-span-1" noBorder info="Share of executions by testing type for this application.">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative h-[168px] w-[168px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={typeSplit} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={2} stroke="none" isAnimationActive={false}>
+                  <Pie data={typeSplit} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={2} stroke="none" isAnimationActive={false}>
                     {typeSplit.map((d) => <Cell key={d.name} fill={d.color} />)}
                   </Pie>
                   <Tooltip formatter={(v, n) => [`${v}%`, n]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <ul className="flex flex-1 flex-col gap-1.5">
+            <ul className="flex w-full flex-col gap-2">
               {typeSplit.map((d) => (
                 <li key={d.name} className="flex items-center justify-between gap-2 text-xs">
                   <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} /><span className="text-slate-600">{d.name}</span></span>
@@ -130,9 +130,9 @@ function ApplicationViewPage() {
           </div>
         </PanelCard>
 
-        <PanelCard title="Recent Executions" className="xl:col-span-2" noPadding>
+        <PanelCard title="Recent Executions" className="xl:col-span-2" noPadding noBorder info="The most recent test-suite executions for this application.">
           <div className="p-5">
-            <DataTable columns={columns} data={executions} enablePagination={false} searchPlaceholder="Search executions..." />
+            <DataTable columns={columns} data={executions} enablePagination={false} maxHeight="20rem" searchPlaceholder="Search executions..." />
           </div>
         </PanelCard>
       </div>

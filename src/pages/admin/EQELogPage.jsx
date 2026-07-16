@@ -5,16 +5,22 @@ import {
   Search,
   Filter,
   FileDown,
+  ScrollText,
+  CheckCircle2,
+  AlertTriangle,
+  Activity,
 } from 'lucide-react';
 import { usePersona } from '@/context/PersonaContext';
-import { useNavigation } from '@/context/NavigationContext';
+import { useNavigation, usePageHeader } from '@/context/NavigationContext';
 import { useToast } from '@/components/ui/Toast';
 import { PanelCard } from '@/components/shared/PanelCard';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { StatusPill } from '@/components/shared/StatusPill';
+import { PageActions } from '@/components/layout/PageActions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Tooltip as UiTooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { getAllAuditLogs } from '@/data/auditLogs';
 import { ROUTES } from '@/lib/constants';
 
@@ -52,6 +58,11 @@ export function EQELogPage() {
   const { currentPersona } = usePersona();
   const { setBreadcrumbs } = useNavigation();
   const { toast } = useToast();
+
+  usePageHeader({
+    title: 'EQE Log',
+    subtitle: `Audit logging console tracking deployments, executions, environments, and quality gate updates.`,
+  });
 
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
@@ -104,27 +115,29 @@ export function EQELogPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-slate-900">EQE Log</h1>
-          <p className="text-sm text-slate-500">
-            Audit logging console tracking deployments, executions, environments, and quality gate updates.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" iconLeft={<RefreshCw className="h-3.5 w-3.5" />} onClick={handleRefresh}>
-            Refresh Logs
-          </Button>
-        </div>
-      </div>
+      {/* Refresh Logs — portalled into the navbar (left of the bell) */}
+      <PageActions>
+        <UiTooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2"
+              iconLeft={<RefreshCw className="h-4 w-4" />}
+              onClick={handleRefresh}
+              aria-label="Refresh logs"
+            />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Refresh Logs</TooltipContent>
+        </UiTooltip>
+      </PageActions>
 
       {/* KPI stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Total Logged Events" value={logs.length.toString()} trend="stable" status="completed" />
-        <KpiCard label="Successful Operations" value={logs.filter(l => l.outcome === 'success').length.toString()} trend="improving" status="on_track" />
-        <KpiCard label="Failed Checks" value={logs.filter(l => l.outcome === 'failure' || l.outcome === 'denied').length.toString()} trend="declining" status="critical" />
-        <KpiCard label="Sync Quality" value="100%" trend="stable" status="on_track" />
+        <KpiCard label="Total Logged Events" value={logs.length.toString()} trend="stable" icon={<ScrollText />} tone="blue" />
+        <KpiCard label="Successful Operations" value={logs.filter(l => l.outcome === 'success').length.toString()} trend="improving" icon={<CheckCircle2 />} tone="green" />
+        <KpiCard label="Failed Checks" value={logs.filter(l => l.outcome === 'failure' || l.outcome === 'denied').length.toString()} trend="declining" icon={<AlertTriangle />} tone="red" />
+        <KpiCard label="Sync Quality" value="100%" trend="stable" icon={<Activity />} tone="purple" />
       </div>
 
       {/* Filters and search */}
